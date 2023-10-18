@@ -1,0 +1,59 @@
+[project]
+name = "phonopy-vibspec"
+dynamic = ["version"]
+description = "Simulate IR and Raman spectra with Phonopy"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+
+authors = [
+  {name = "Pierre Beaujean", email = "pierre.beaujean@unamur.be" }
+]
+
+maintainers = [
+  {name = "Pierre Beaujean", email = "pierre.beaujean@unamur.be" }
+]
+
+classifiers = [
+    # For a list of valid classifiers, see https://pypi.org/classifiers/
+    "Development Status :: 3 - Alpha",
+
+    "Intended Audience :: Developers",
+
+    "License :: OSI Approved :: MIT License",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+]
+
+dependencies = [
+    "numpy",
+    "phonopy"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "flake8-quotes",
+    "autopep8",
+    "bump2version",
+    "pytest"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pierre-24/phonopy-vibspec"
+"Bug Reports" = "https://github.com/pierre-24/phonopy-vibspec/issues"
+"Source" = "https://github.com/pierre-24/phonopy-vibspec/"
+
+[project.scripts]
+# none for the moment
+
+[tool.setuptools]
+packages = ['phonopy_vibspec']
+
+[tool.setuptools.dynamic]
+version = {attr = "phonopy_vibspec.__version__"}
+
+[build-system]
+requires = ["setuptools>=43.0.0", "wheel"]

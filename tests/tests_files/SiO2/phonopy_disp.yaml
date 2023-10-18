@@ -3,12 +3,9 @@ phonopy:
   frequency_unit_conversion_factor: 15.633302
   symmetry_tolerance: 1.00000e-05
   configuration:
-    fc_symmetry: ".true."
-    eigenvectors: ".true."
-    mesh_numbers: "1 1 1"
+    cell_filename: "POSCAR-unitcell"
+    create_displacements: ".true."
     dim: "1 1 1"
-    read_force_constants: ".true."
-    hdf5: ".true."
 
 physical_unit:
   atomic_mass: "AMU"
@@ -148,3 +145,32 @@ supercell:
     coordinates: [  0.723982511991845,  0.135487870633840,  0.445811227067169 ]
     mass: 15.999400
     reduced_to: 9
+
+displacements:
+- atom:    1
+  displacement:
+    [  -0.0050000000000000,  0.0086602540378444,  0.0000000000000000 ]
+- atom:    1
+  displacement:
+    [   0.0050000000000000, -0.0086602540378444,  0.0000000000000000 ]
+- atom:    1
+  displacement:
+    [   0.0000000000000000,  0.0000000000000000,  0.0100000000000000 ]
+- atom:    4
+  displacement:
+    [   0.0100000000000000,  0.0000000000000000,  0.0000000000000000 ]
+- atom:    4
+  displacement:
+    [  -0.0100000000000000,  0.0000000000000000,  0.0000000000000000 ]
+- atom:    4
+  displacement:
+    [  -0.0050000000000000,  0.0086602540378444,  0.0000000000000000 ]
+- atom:    4
+  displacement:
+    [   0.0050000000000000, -0.0086602540378444,  0.0000000000000000 ]
+- atom:    4
+  displacement:
+    [   0.0000000000000000,  0.0000000000000000,  0.0100000000000000 ]
+- atom:    4
+  displacement:
+    [   0.0000000000000000,  0.0000000000000000, -0.0100000000000000 ]

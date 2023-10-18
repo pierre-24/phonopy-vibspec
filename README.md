@@ -23,6 +23,22 @@ Note: as this script install programs, you might need to add their location (suc
 
 T.B.C.
 
+```
+# 1. Create POSCAR:
+# (from https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface)
+phonopy -d --dim="1 1 1" -c POSCAR-unitcell  # preferentially a larger cell
+
+# 2. cleanup
+rm POSCAR-0*
+mv SPOSCAR POSCAR
+
+# 3. Run VASP using `IBRION=8` or `IBRION=6` and appropriate `POTIM`
+
+# 4. Extract force constants
+phonopy --hdf5 --fc vasprun.xml
+
+```
+
 ## Who?
 
 My name is [Pierre Beaujean](https://pierrebeaujean.net), and I have a Ph.D. in quantum chemistry from the [University of Namur](https://unamur.be) (Belgium).

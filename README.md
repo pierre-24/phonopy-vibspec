@@ -14,7 +14,7 @@ If you are interested in that (or polarized Raman), use their code instead :)
 To install this package, you need a running Python 3 installation (Python >= 3.10 recommended), and
 
 ```bash
-pip3 install git+https://github.com/pierre-24/just-psf.git
+pip3 install git+https://github.com/pierre-24/phonopy-vibspec.git
 ```
 
 Note: as this script install programs, you might need to add their location (such as `$HOME/.local/bin`, if you use `--user`) to your `$PATH`, if any.

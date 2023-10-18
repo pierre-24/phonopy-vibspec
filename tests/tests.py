@@ -10,10 +10,18 @@ def test_infrared_SiO2(context_SiO2):
         born_filename='BORN'
     )
 
-    # SiO2 is D3, so A2 and E mode should be active, A1 should not!
-    ir_intensities = results.infrared_intensities()[3:]
+    # compute intensities
+    freqs = results.frequencies
+    ir_intensities = results.infrared_intensities()
 
-    for i, label in enumerate(results.irrep_labels[3:]):
+    # check that degenerate modes share the same frequencies and intensities
+    for dgset in (results.irreps._degenerate_sets):
+        if len(dgset) > 1:
+            assert freqs[dgset[0]] == pytest.approx(freqs[dgset[1]], abs=1e-3)
+            assert ir_intensities[dgset[0]] == pytest.approx(ir_intensities[dgset[1]], abs=1e-3)
+
+    # SiO2 is D3, so A2 and E mode should be active, A1 should not!
+    for i, label in enumerate(results.irrep_labels):
         if label in ['A2', 'E']:
             assert ir_intensities[i] != pytest.approx(.0, abs=1e-8)
         else:

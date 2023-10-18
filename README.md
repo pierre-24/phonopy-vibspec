@@ -23,20 +23,23 @@ Note: as this script install programs, you might need to add their location (suc
 
 T.B.C.
 
-```
-# 1. Create POSCAR:
+```bash
+# 1. Create POSCAR of supercell:
 # (from https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface)
-phonopy -d --dim="1 1 1" -c POSCAR-unitcell  # preferentially a larger cell
+phonopy -d --dim="1 1 1" -c unitcell.vasp 
+# Note: use preferentially a larger cell
 
 # 2. cleanup
-rm POSCAR-0*
+rm POSCAR-*
 mv SPOSCAR POSCAR
 
 # 3. Run VASP using `IBRION=8` or `IBRION=6` and appropriate `POTIM`
 
 # 4. Extract force constants
-phonopy --hdf5 --fc vasprun.xml
+phonopy --fc --hdf5 vasprun.xml
 
+# 5. Extract Born effective charges from calculations
+phonopy-vasp-born vasprun.xml > BORN
 ```
 
 ## Who?

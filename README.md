@@ -46,4 +46,4 @@ phonopy-vasp-born vasprun.xml > BORN
 
 My name is [Pierre Beaujean](https://pierrebeaujean.net), and I have a Ph.D. in quantum chemistry from the [University of Namur](https://unamur.be) (Belgium).
 I'm the main (and only) developer of this project, used in our lab.
-I use this in the frame of my post-doctoral research in order to study batteries and solid electrolyte interphrase (we have a strong background in vibrational spectroscopy in our lab!), and I developed this project to ease my life.
+I use this in the frame of my post-doctoral research in order to study batteries and solid electrolyte interphrase (but we have a strong background in spectroscopies in our lab!), and I developed this project to ease my life.

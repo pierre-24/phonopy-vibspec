@@ -49,5 +49,19 @@ class PhonopyResults:
         if selected_modes:
             disps = self.eigendisps[selected_modes]
 
+        for i in range(3 * self.N):
+            iri = .0
+            for a in range(3):
+                sum_temp1 = .0
+                for j in range(self.N):
+                    sum_temp2 = .0
+                    for b in range(3):
+                        sum_temp2 += born_tensor[j, a, b] * disps[i, j, b]
+                    sum_temp1 += sum_temp2
+
+                iri += sum_temp1 ** 2
+
+            print(i, iri)
+
         dipoles = numpy.einsum('ijb,jab->ia', disps, born_tensor)
         return (dipoles ** 2).sum(axis=1)

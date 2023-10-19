@@ -14,7 +14,7 @@ THZ_TO_INV_CM = 33.35641
 TWO_POINTS_STENCIL = [[-1, -.5], [1, .5]]  # two-points, centered
 
 
-class PhonopyPhononsAnalyzer:
+class PhononsAnalyzer:
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
         self.supercell = phonon.supercell
@@ -50,12 +50,12 @@ class PhonopyPhononsAnalyzer:
         phonopy_yaml: str = 'phonopy_disp.yaml',
         force_constants_filename: str = 'force_constants.hdf5',
         born_filename: Optional[str] = None
-    ) -> 'PhonopyPhononsAnalyzer':
+    ) -> 'PhononsAnalyzer':
         """
         Use the Python interface of Phonopy, see https://phonopy.github.io/phonopy/phonopy-module.html.
         """
 
-        return PhonopyPhononsAnalyzer(phonopy.load(
+        return PhononsAnalyzer(phonopy.load(
             phonopy_yaml=phonopy_yaml,
             force_constants_filename=force_constants_filename,
             born_filename=born_filename,

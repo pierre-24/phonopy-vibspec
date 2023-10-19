@@ -7,7 +7,7 @@ import pathlib
 
 from typing import List
 
-from phonopy_vibspec.phonopy_phonons_analyzer import PhonopyPhononsAnalyzer
+from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
 from phonopy_vibspec.scripts import add_common_args
 
 
@@ -37,7 +37,7 @@ def main():
 
     args = parser.parse_args()
 
-    phonons = PhonopyPhononsAnalyzer.from_phonopy(
+    phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml=args.phonopy,
         force_constants_filename=args.fc,
     )

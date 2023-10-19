@@ -2,11 +2,11 @@ import numpy
 import pytest
 import yaml
 
-from phonopy_vibspec.phonopy_phonons_analyzer import PhonopyPhononsAnalyzer, TWO_POINTS_STENCIL
+from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL
 
 
 def test_infrared_SiO2(context_SiO2):
-    phonons = PhonopyPhononsAnalyzer.from_phonopy(
+    phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml='phonopy_disp.yaml',
         force_constants_filename='force_constants.hdf5',
         born_filename='BORN'
@@ -31,7 +31,7 @@ def test_infrared_SiO2(context_SiO2):
 
 
 def test_create_displaced_geometries_SiO2(context_SiO2, tmp_path):
-    phonons = PhonopyPhononsAnalyzer.from_phonopy(
+    phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml='phonopy_disp.yaml',
         force_constants_filename='force_constants.hdf5',
         born_filename='BORN'
@@ -52,7 +52,7 @@ def test_create_displaced_geometries_SiO2(context_SiO2, tmp_path):
 def test_create_displaced_geometries_select_modes_SiO2(context_SiO2, tmp_path):
     requested_modes = [3, 5, 6]
 
-    phonons = PhonopyPhononsAnalyzer.from_phonopy(
+    phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml='phonopy_disp.yaml',
         force_constants_filename='force_constants.hdf5',
         born_filename='BORN'

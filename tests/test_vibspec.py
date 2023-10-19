@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy
 import pytest
 
@@ -66,6 +68,7 @@ def test_prepare_raman_SiO2(context_SiO2, tmp_path):
 
     spectrum = phonons.prepare_raman(tmp_path)
 
+    assert spectrum.cell_volume == phonons.phonotopy.unitcell.volume
     assert len(spectrum.modes) == 24  # skip acoustic
     assert numpy.allclose(spectrum.frequencies, phonons.frequencies[3:])
     assert spectrum.irrep_labels == phonons.irrep_labels[3:]
@@ -113,6 +116,7 @@ def test_raman_spectrum_save_SiO2(context_SiO2, tmp_path):
 
     spectrum_read = RamanSpectrum.from_hdf5(tmp_path / 'raman.hdf5')
 
+    assert spectrum.cell_volume == spectrum_read.cell_volume
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
     assert numpy.allclose(spectrum.frequencies, spectrum_read.frequencies)
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
@@ -121,3 +125,19 @@ def test_raman_spectrum_save_SiO2(context_SiO2, tmp_path):
     assert numpy.allclose(spectrum.nd_mode_equiv, spectrum_read.nd_mode_equiv)
     assert numpy.allclose(spectrum.nd_modes, spectrum_read.nd_modes)
     assert numpy.allclose(spectrum.nd_steps, spectrum_read.nd_steps)
+
+
+def test_raman_spectrum_extract_dielectrics(context_SiO2):
+    calc_directory = pathlib.Path.cwd() / 'calc_dielectrics'
+    spectrum = RamanSpectrum.from_hdf5(pathlib.Path(calc_directory / 'raman.hdf5'))
+
+    nsteps = len(spectrum.nd_stencil)
+    files = []
+    for mode in spectrum.nd_modes:
+        for i in range(nsteps):
+            files.append(calc_directory / 'unitcell_{:04d}_{:02d}'.format(mode + 1, i + 1) / 'vasprun.xml')
+
+    spectrum.extract_dielectrics(files)
+
+    assert spectrum.dielectrics is not None
+    assert spectrum.dalpha_dq is not None

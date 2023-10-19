@@ -17,6 +17,8 @@ TWO_POINTS_STENCIL = [(-1, -.5), (1, .5)]  # two-points, centered
 
 
 class PhononsAnalyzer:
+    """Use Phonopy to extract phonon frequencies and eigenmodes, as well as irreps
+    """
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
         self.supercell = phonon.supercell
@@ -167,6 +169,7 @@ class PhononsAnalyzer:
 
         calculator = RamanSpectrum(
             # input
+            cell_volume=base_geometry.volume,
             modes=modes,
             frequencies=frequencies,
             irrep_labels=irrep_labels,

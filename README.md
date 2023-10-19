@@ -21,8 +21,7 @@ Note: as this script install programs, you might need to add their location (suc
 
 ## Usage
 
-T.B.C.
-
+Common procedure:
 ```bash
 # 1. Create POSCAR of supercell:
 # (from https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface)
@@ -37,8 +36,13 @@ mv SPOSCAR POSCAR
 
 # 4. Extract force constants
 phonopy --fc --hdf5 vasprun.xml
+```
 
-# 5. Extract Born effective charges from calculations
+For infrared:
+```bash
+# 5. Run a calculation with `LEPSILON = .TRUE.` on the unit cell
+
+# 6. Extract Born effective charges from calculations
 phonopy-vasp-born vasprun.xml > BORN
 ```
 
@@ -46,4 +50,6 @@ phonopy-vasp-born vasprun.xml > BORN
 
 My name is [Pierre Beaujean](https://pierrebeaujean.net), and I have a Ph.D. in quantum chemistry from the [University of Namur](https://unamur.be) (Belgium).
 I'm the main (and only) developer of this project, used in our lab.
-I use this in the frame of my post-doctoral research in order to study batteries and solid electrolyte interphrase (but we have a strong background in spectroscopies in our lab!), and I developed this project to ease my life.
+I use this in the frame of my post-doctoral research in order to study batteries and solid electrolyte interphrase, and I developed this project to ease my life.
+
+Note: due to my (quantum) chemistry background, we may speak of similar things using a different vocabulary.

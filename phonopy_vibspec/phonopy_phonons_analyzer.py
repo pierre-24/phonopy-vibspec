@@ -1,5 +1,8 @@
+import pathlib
+import yaml
 import numpy
 import phonopy
+from phonopy.interface import calculator
 
 from numpy.typing import NDArray
 from typing import Optional, List
@@ -8,7 +11,7 @@ from typing import Optional, List
 THZ_TO_INV_CM = 33.35641
 
 
-class PhonopyResults:
+class PhonopyPhononsAnalyzer:
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonon = phonon
         self.supercell = phonon.supercell
@@ -43,13 +46,13 @@ class PhonopyResults:
         cls,
         phonopy_yaml: str = 'phonopy_disp.yaml',
         force_constants_filename: str = 'force_constants.hdf5',
-        born_filename: str = 'BORN'
-    ) -> 'PhonopyResults':
+        born_filename: Optional[str] = None
+    ) -> 'PhonopyPhononsAnalyzer':
         """
         Use the Python interface of Phonopy, see https://phonopy.github.io/phonopy/phonopy-module.html.
         """
 
-        return PhonopyResults(phonopy.load(
+        return PhonopyPhononsAnalyzer(phonopy.load(
             phonopy_yaml=phonopy_yaml,
             force_constants_filename=force_constants_filename,
             born_filename=born_filename,
@@ -69,3 +72,55 @@ class PhonopyResults:
 
         dipoles = numpy.einsum('ijb,jab->ia', disps, born_tensor)
         return (dipoles ** 2).sum(axis=1)
+
+    def create_displaced_geometries(
+        self,
+        directory: pathlib.Path,
+        disp: float = 1e-2,
+        modes: Optional[List[int]] = None,
+        ref: Optional[str] = None,
+        stencil: List[float] = [-.5, .5]
+    ):
+        """
+        Create a set of displaced geometries of the unitcell in `directory`.
+        The goal is to use a two point stencil, so two geometries are generated per mode.
+        Tries to be clever by only considered one mode if they are generated (E, T).
+        """
+
+        # select modes
+        if modes is None:
+            modes = []
+            for dgset in self.irreps._degenerate_sets:
+                if any(x < 3 for x in dgset):  # skip acoustic phonons
+                    continue
+
+                modes.append(dgset[0])
+
+        # create geometries
+        base_geometry = self.phonon.unitcell
+        raman_disps_info = []
+
+        for mode in modes:
+            if mode < 0 or mode >= 3 * self.N:
+                raise IndexError(mode)
+
+            mode_displacement = disp
+            if ref == 'norm':
+                mode_displacement = disp / float(numpy.linalg.norm(self.eigendisps[mode]))
+
+            raman_disps_info.append({'mode': mode, 'step': mode_displacement})
+
+            for i, value in enumerate(stencil):
+                displaced_geometry = base_geometry.copy()
+                displaced_geometry.set_positions(
+                    base_geometry.positions + value * mode_displacement * self.eigendisps[mode]
+                )
+
+                calculator.write_crystal_structure(
+                    directory / 'unitcell_{:04d}_{:02d}.vasp'.format(mode, i),
+                    displaced_geometry,
+                    interface_mode='vasp'
+                )
+
+        with (directory / 'raman_disps.yml').open('w') as f:
+            yaml.dump({'stencil': stencil, 'modes': raman_disps_info}, f)

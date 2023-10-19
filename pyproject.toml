@@ -47,10 +47,10 @@ dev = [
 "Source" = "https://github.com/pierre-24/phonopy-vibspec/"
 
 [project.scripts]
-# none for the moment
+'phonopy-vs-create-displaced' = 'phonopy_vibspec.scripts.displaced_geometries:main'
 
 [tool.setuptools]
-packages = ['phonopy_vibspec']
+packages = ['phonopy_vibspec', 'phonopy_vibspec.scripts']
 
 [tool.setuptools.dynamic]
 version = {attr = "phonopy_vibspec.__version__"}

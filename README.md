@@ -52,7 +52,7 @@ phonopy-vasp-born vasprun.xml > BORN
 For Raman:
 ```bash
 # 1. Get displaced geometries
-phonopy-vs-create-displaced
+phonopy-vs-prepare-raman
 
 # 2. Run a calculation with `LEPSILON = .TRUE.` on each geometry
 

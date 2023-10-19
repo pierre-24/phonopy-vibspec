@@ -1,17 +1,19 @@
 import pathlib
-import yaml
 import numpy
+
 import phonopy
-from phonopy.interface import calculator
+from phonopy.interface import calculator as phonopy_calculator
 
 from numpy.typing import NDArray
 from typing import Optional, List
+
+from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 
 THZ_TO_INV_CM = 33.35641
 
 # [(value, coef), ...]
 # see https://en.wikipedia.org/wiki/Finite_difference_coefficient
-TWO_POINTS_STENCIL = [[-1, -.5], [1, .5]]  # two-points, centered
+TWO_POINTS_STENCIL = [(-1, -.5), (1, .5)]  # two-points, centered
 
 
 class PhononsAnalyzer:
@@ -37,7 +39,7 @@ class PhononsAnalyzer:
         # get irreps
         self.phonotopy.set_irreps([0, 0, 0])
         self.irreps = phonon.get_irreps()
-        self.irrep_labels = [None] * (self.N * 3)
+        self.irrep_labels = [''] * (self.N * 3)
 
         # TODO: that's internal API, so subject to change!
         for label, dgset in zip(self.irreps._get_ir_labels(), self.irreps._degenerate_sets):
@@ -61,6 +63,25 @@ class PhononsAnalyzer:
             born_filename=born_filename,
         ))
 
+    def infrared_spectrum(self, modes: Optional[List[int]] = None) -> InfraredSpectrum:
+        """
+        The `modes` is a 0-based list of mode to include.
+        If `modes` is None, then all non-acoustic modes are selected.
+        """
+        born_tensor = self.phonotopy.nac_params['born']
+
+        # select modes if any
+        if modes is None:
+            modes = list(range(3, 3 * self.N))
+
+        frequencies = [self.frequencies[m] for m in modes]
+        irrep_labels = [self.irrep_labels[m] for m in modes]
+        disps = self.eigendisps[numpy.ix_(modes)]
+
+        dmu_dq = numpy.einsum('ijb,jab->ia', disps, born_tensor)
+
+        return InfraredSpectrum(modes=modes, frequencies=frequencies, irrep_labels=irrep_labels, dmu_dq=dmu_dq)
+
     def infrared_intensities(self, selected_modes: Optional[List[int]] = None) -> NDArray[float]:
         """Compute the infrared intensities with Eq. 7 of 10.1039/C7CP01680H.
         Intensities are given in [e²/AMU].
@@ -76,34 +97,34 @@ class PhononsAnalyzer:
         dipoles = numpy.einsum('ijb,jab->ia', disps, born_tensor)
         return (dipoles ** 2).sum(axis=1)
 
-    def create_displaced_geometries(
+    def prepare_raman(
         self,
         directory: pathlib.Path,
-        disp: float = 1e-2,
         modes: Optional[List[int]] = None,
+        disp: float = 1e-2,
         ref: Optional[str] = None,
-        stencil: List[List[float]] = TWO_POINTS_STENCIL
-    ):
+        stencil: Optional[list] = None
+    ) -> RamanSpectrum:
         """
-        Create a set of displaced geometries of the unitcell in `directory`.
-        The number of geometries that are generated depends on the stencil.
+        Prepare a Raman spectrum by creating a set of displaced geometries of the unitcell in `directory`.
+        The number of geometries that are generated per mode depends on the stencil.
 
-        The `modes` is a 0-based list of mode.
-        If `mode` is `None`,  all mode are selected, except the acoustic ones, and only one version of degenerated ones.
+        The `modes` is a 0-based list of mode to include.
+        If `modes` is None, then all non-acoustic modes are selected.
         """
 
-        # select modes
+        stencil = TWO_POINTS_STENCIL if stencil is None else stencil
+
+        # select modes if any
         if modes is None:
-            modes = []
-            for dgset in self.irreps._degenerate_sets:
-                if any(x < 3 for x in dgset):  # skip acoustic phonons
-                    continue
+            modes = list(range(3, 3 * self.N))
 
-                modes.append(dgset[0])
+        frequencies = [self.frequencies[m] for m in modes]
+        irrep_labels = [self.irrep_labels[m] for m in modes]
 
         # create geometries
+        steps = []
         base_geometry = self.phonotopy.unitcell
-        raman_disps_info = []
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
@@ -113,7 +134,7 @@ class PhononsAnalyzer:
             if ref == 'norm':
                 step = disp / float(numpy.linalg.norm(self.eigendisps[mode]))
 
-            raman_disps_info.append({'mode': mode, 'step': step})
+            steps.append(step)
 
             for i, (value, _) in enumerate(stencil):
                 displaced_geometry = base_geometry.copy()
@@ -121,11 +142,18 @@ class PhononsAnalyzer:
                     base_geometry.positions + value * step * self.eigendisps[mode]
                 )
 
-                calculator.write_crystal_structure(
+                phonopy_calculator.write_crystal_structure(
                     directory / 'unitcell_{:04d}_{:02d}.vasp'.format(mode + 1, i + 1),  # 1-based output
                     displaced_geometry,
                     interface_mode='vasp'
                 )
 
-        with (directory / 'raman_disps.yml').open('w') as f:
-            yaml.dump({'stencil': stencil, 'modes': raman_disps_info}, f)
+        calculator = RamanSpectrum(
+            modes=modes,
+            frequencies=frequencies,
+            irrep_labels=irrep_labels,
+            steps=steps,
+            stencil=stencil
+        )
+
+        return calculator

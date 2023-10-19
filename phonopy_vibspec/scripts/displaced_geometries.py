@@ -42,12 +42,14 @@ def main():
         force_constants_filename=args.fc,
     )
 
-    phonons.create_displaced_geometries(
-        pathlib.Path('.'),
+    raman_spectrum = phonons.prepare_raman(
+        args.output,
         disp=args.displacement,
         ref=args.ref,
         modes=args.modes if len(args.modes) > 0 else None
     )
+
+    raman_spectrum.to_hdf5(args.output / 'raman.hdf5')
 
 
 if __name__ == '__main__':

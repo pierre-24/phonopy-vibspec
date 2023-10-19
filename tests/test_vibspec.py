@@ -54,6 +54,7 @@ def test_infrared_spectrum_save_SiO2(context_SiO2, tmp_path):
     # read
     spectrum_read = InfraredSpectrum.from_hdf5(tmp_path / 'ir.hdf5')
 
+    assert spectrum.irrep_labels == spectrum_read.irrep_labels
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
     assert numpy.allclose(spectrum.frequencies, spectrum_read.frequencies)
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
@@ -117,6 +118,7 @@ def test_raman_spectrum_save_SiO2(context_SiO2, tmp_path):
     spectrum_read = RamanSpectrum.from_hdf5(tmp_path / 'raman.hdf5')
 
     assert spectrum.cell_volume == spectrum_read.cell_volume
+    assert spectrum.irrep_labels == spectrum_read.irrep_labels
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
     assert numpy.allclose(spectrum.frequencies, spectrum_read.frequencies)
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
@@ -141,3 +143,11 @@ def test_raman_spectrum_extract_dielectrics(context_SiO2):
 
     assert spectrum.dielectrics is not None
     assert spectrum.dalpha_dq is not None
+
+    # SiO2 is D3, so A1 and E mode should be active, A2 should not!
+    raman_intensities = spectrum.compute_intensities()
+    for i, label in enumerate(spectrum.irrep_labels):
+        if label in ['A1', 'E']:
+            assert raman_intensities[i] != pytest.approx(.0, abs=1e-3)
+        else:
+            assert raman_intensities[i] == pytest.approx(.0, abs=1e-3)

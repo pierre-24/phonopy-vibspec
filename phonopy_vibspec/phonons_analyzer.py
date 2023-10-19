@@ -4,7 +4,6 @@ import numpy
 import phonopy
 from phonopy.interface import calculator as phonopy_calculator
 
-from numpy.typing import NDArray
 from typing import Optional, List
 
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
@@ -83,21 +82,6 @@ class PhononsAnalyzer:
         dmu_dq = numpy.einsum('ijb,jab->ia', disps, born_tensor)
 
         return InfraredSpectrum(modes=modes, frequencies=frequencies, irrep_labels=irrep_labels, dmu_dq=dmu_dq)
-
-    def infrared_intensities(self, selected_modes: Optional[List[int]] = None) -> NDArray[float]:
-        """Compute the infrared intensities with Eq. 7 of 10.1039/C7CP01680H.
-        Intensities are given in [e²/AMU].
-        """
-
-        born_tensor = self.phonotopy.nac_params['born']
-
-        # select modes if any
-        disps = self.eigendisps
-        if selected_modes:
-            disps = self.eigendisps[numpy.ix_(selected_modes)]
-
-        dipoles = numpy.einsum('ijb,jab->ia', disps, born_tensor)
-        return (dipoles ** 2).sum(axis=1)
 
     def prepare_raman(
         self,

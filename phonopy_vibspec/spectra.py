@@ -44,7 +44,7 @@ class InfraredSpectrum:
             dmu_dq = f['input/dmu_dq'][:]
             irrep_labels = None
             if 'input/irrep_labels' in f:
-                irrep_labels = f['input/irrep_labels'][:]
+                irrep_labels = [x.decode('utf-8') for x in f['input/irrep_labels']]
 
             return cls(modes=modes, frequencies=frequencies, irrep_labels=irrep_labels, dmu_dq=dmu_dq)
 
@@ -56,9 +56,13 @@ class InfraredSpectrum:
             g_input = f.create_group('input')
             g_input.create_dataset('modes', data=self.modes)
             g_input.create_dataset('frequencies', data=self.frequencies)
+            g_input.create_dataset('irrep_labels', data=[x.encode('utf-8') for x in self.irrep_labels])
             g_input.create_dataset('dmu_dq', data=self.dmu_dq)
 
     def compute_intensities(self) -> NDArray[float]:
+        """Compute intensities, based on Eq. 7 of 10.1039/C7CP01680H.
+        Intensities are given in [e²/AMU].
+        """
         return (self.dmu_dq ** 2).sum(axis=1)
 
 
@@ -113,7 +117,7 @@ class RamanSpectrum:
             irrep_labels = None
             dalpha_dq = None
             if 'input/irrep_labels' in f:
-                irrep_labels = f['input/irrep_labels'][:]
+                irrep_labels = [x.decode('utf-8') for x in f['input/irrep_labels']]
             if 'input/dalpha_dq' in f:
                 dalpha_dq = f['input/dalpha_dq'][:]
 
@@ -150,7 +154,7 @@ class RamanSpectrum:
             g_input.create_dataset('frequencies', data=self.frequencies)
 
             if self.irrep_labels:
-                g_input.create_dataset('irrep_labels', data=self.irrep_labels)
+                g_input.create_dataset('irrep_labels', data=[x.encode('utf-8') for x in self.irrep_labels])
 
             if self.dalpha_dq:
                 g_input.create_dataset('dalpha_dq', data=self.dalpha_dq)
@@ -208,8 +212,6 @@ class RamanSpectrum:
             dadqs[i] = numpy.sum(
                 [c * d for (v, c), d in zip(self.nd_stencil, self.dielectrics[i])], axis=0) / self.nd_steps[i]
 
-        print(dadqs)
-
         # distribute:
         mode_to_index = dict((m, i) for i, m in enumerate(self.nd_modes))
         dalpha_dq = numpy.zeros((len(self), 3, 3))
@@ -217,3 +219,52 @@ class RamanSpectrum:
             dalpha_dq[i] = dadqs[mode_to_index[self.nd_mode_equiv[i]]]
 
         self.dalpha_dq = dalpha_dq
+
+    def _sq_alpha(self) -> NDArray[float]:
+        """
+        Compute the first Raman invariant (β²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
+        """
+
+        assert self.dalpha_dq is not None
+
+        prefactor = self.cell_volume / (4 * numpy.pi)
+        alphas = prefactor * (self.dalpha_dq[:, 0, 0] + self.dalpha_dq[:, 1, 1] + self.dalpha_dq[:, 2, 2]) / 3
+        return alphas ** 2
+
+    def _sq_beta(self) -> NDArray[float]:
+        """
+        Compute the second Raman invariant (α²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
+        """
+
+        assert self.dalpha_dq is not None
+
+        prefactor = self.cell_volume / (4 * numpy.pi)
+
+        return prefactor ** 2 * (
+            (
+                self.dalpha_dq[:, 0, 0] - self.dalpha_dq[:, 1, 1]
+            ) ** 2 + (
+                self.dalpha_dq[:, 0, 0] - self.dalpha_dq[:, 2, 2]
+            ) ** 2 + (
+                self.dalpha_dq[:, 1, 1] - self.dalpha_dq[:, 2, 2]
+            ) ** 2 + 6 * (
+                self.dalpha_dq[:, 0, 1] ** 2 + self.dalpha_dq[:, 0, 2] ** 2 + self.dalpha_dq[:, 1, 2] ** 2
+            )
+        )
+
+    def compute_intensities(self) -> NDArray[float]:
+        """Compute intensities.
+        Based on Eq. 9 and 10 of 10.1039/C7CP01680H or alternatively Eq. 6 of 10.1103/PhysRevB.54.7830.
+        Intensities are given in [Å⁴/AMU].
+        """
+
+        return 45 * self._sq_alpha() + 3.5 * self._sq_beta()
+
+    def compute_depolarization_ratios(self) -> NDArray[float]:
+        """Compute DR according to Eq. 8 of 10.1103/PhysRevB.54.7830
+        """
+
+        a = self._sq_alpha()
+        b = self._sq_beta()
+
+        return 3 * b / (45 * a + 4 * b)

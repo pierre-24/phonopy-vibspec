@@ -13,11 +13,12 @@ def test_infrared_SiO2(context_SiO2):
     )
 
     # get spectrum
-    infrared_spectrum = phonons.infrared_spectrum()
-    ir_intensities = infrared_spectrum.compute_intensities()
+    spectrum = phonons.infrared_spectrum()
+    ir_intensities = spectrum.compute_intensities()
 
-    assert len(infrared_spectrum.modes) == 24  # skip acoustic
-    assert numpy.allclose(infrared_spectrum.frequencies, phonons.frequencies[3:])
+    assert len(spectrum.modes) == 24  # skip acoustic
+    assert numpy.allclose(spectrum.frequencies, phonons.frequencies[3:])
+    assert spectrum.irrep_labels == phonons.irrep_labels[3:]
 
     # check that degenerate modes share the same intensities
     for dgset in (phonons.irreps._degenerate_sets):
@@ -28,7 +29,7 @@ def test_infrared_SiO2(context_SiO2):
             assert ir_intensities[dgset[0] - 3] == pytest.approx(ir_intensities[dgset[1] - 3], abs=1e-3)
 
     # SiO2 is D3, so A2 and E mode should be active, A1 should not!
-    for i, label in enumerate(infrared_spectrum.irrep_labels):
+    for i, label in enumerate(spectrum.irrep_labels):
         if label in ['A2', 'E']:
             assert ir_intensities[i] != pytest.approx(.0, abs=1e-8)
         else:
@@ -63,14 +64,24 @@ def test_prepare_raman_SiO2(context_SiO2, tmp_path):
         force_constants_filename='force_constants.hdf5'
     )
 
-    spectrum = phonons.prepare_raman(tmp_path, ref='norm')
-    assert len(spectrum.modes) == 24
-    assert spectrum.stencil == TWO_POINTS_STENCIL
+    spectrum = phonons.prepare_raman(tmp_path)
 
-    for i in range(len(spectrum.modes)):
-        assert spectrum.steps[i] == pytest.approx(
-            0.01 / numpy.linalg.norm(phonons.eigendisps[spectrum.modes[i]])
-        )
+    assert len(spectrum.modes) == 24  # skip acoustic
+    assert numpy.allclose(spectrum.frequencies, phonons.frequencies[3:])
+    assert spectrum.irrep_labels == phonons.irrep_labels[3:]
+
+    assert len(spectrum.nd_modes) == 16  # remove degenerates
+    assert spectrum.nd_stencil == TWO_POINTS_STENCIL
+    assert spectrum.nd_steps == [1e-2] * len(spectrum.nd_modes)
+
+    # check if files have been created
+    for i in range(len(spectrum)):
+        mode = spectrum.modes[i]
+        f = tmp_path / 'unitcell_{:04d}_{:02d}.vasp'.format(mode + 1, 1)
+        if spectrum.nd_mode_equiv[i] != mode:
+            assert not f.exists()
+        else:
+            assert f.exists()
 
 
 def test_prepare_raman_select_modes_SiO2(context_SiO2, tmp_path):
@@ -81,10 +92,14 @@ def test_prepare_raman_select_modes_SiO2(context_SiO2, tmp_path):
         force_constants_filename='force_constants.hdf5'
     )
 
-    spectrum = phonons.prepare_raman(tmp_path, modes=requested_modes)
+    spectrum = phonons.prepare_raman(tmp_path, modes=requested_modes, ref='norm')
 
     assert spectrum.modes == requested_modes
-    assert spectrum.steps == [1e-2] * len(requested_modes)
+
+    for i in range(len(spectrum.nd_modes)):
+        assert spectrum.nd_steps[i] == pytest.approx(
+            0.01 / numpy.linalg.norm(phonons.eigendisps[requested_modes[i]])
+        )
 
 
 def test_raman_spectrum_save_SiO2(context_SiO2, tmp_path):
@@ -102,5 +117,7 @@ def test_raman_spectrum_save_SiO2(context_SiO2, tmp_path):
     assert numpy.allclose(spectrum.frequencies, spectrum_read.frequencies)
     assert numpy.allclose(spectrum.modes, spectrum_read.modes)
 
-    assert numpy.allclose(spectrum.stencil, spectrum_read.stencil)
-    assert numpy.allclose(spectrum.steps, spectrum_read.steps)
+    assert numpy.allclose(spectrum.nd_stencil, spectrum_read.nd_stencil)
+    assert numpy.allclose(spectrum.nd_mode_equiv, spectrum_read.nd_mode_equiv)
+    assert numpy.allclose(spectrum.nd_modes, spectrum_read.nd_modes)
+    assert numpy.allclose(spectrum.nd_steps, spectrum_read.nd_steps)

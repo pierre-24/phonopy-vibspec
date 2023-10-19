@@ -106,7 +106,10 @@ class PhononsAnalyzer:
         stencil: Optional[list] = None
     ) -> RamanSpectrum:
         """
-        Prepare a Raman spectrum by creating a set of displaced geometries of the unitcell in `directory`.
+        Prepare a Raman spectrum by preparing numerical differentiation, and thus creating a set of displaced
+        geometries of the unitcell in `directory`.
+        Degenerate modes are removed from the numerical differentiation (i.e., only the first mode of
+        each degenerate set will be computed).
         The number of geometries that are generated per mode depends on the stencil.
 
         The `modes` is a 0-based list of mode to include.
@@ -123,12 +126,26 @@ class PhononsAnalyzer:
         irrep_labels = [self.irrep_labels[m] for m in modes]
 
         # create geometries
+        dgsets = {}
+        for dgset in self.irreps._degenerate_sets:
+            for i in dgset:
+                dgsets[i] = dgset[0]
+
+        mode_equiv = []
+        mode_calcs = []
         steps = []
+
         base_geometry = self.phonotopy.unitcell
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
                 raise IndexError(mode)
+
+            mode_equiv.append(dgsets[mode])
+            if dgsets[mode] != mode:
+                continue
+            else:
+                mode_calcs.append(mode)
 
             step = disp
             if ref == 'norm':
@@ -149,11 +166,15 @@ class PhononsAnalyzer:
                 )
 
         calculator = RamanSpectrum(
+            # input
             modes=modes,
             frequencies=frequencies,
             irrep_labels=irrep_labels,
-            steps=steps,
-            stencil=stencil
+            # nd:
+            nd_stencil=stencil,
+            nd_mode_equiv=mode_equiv,
+            nd_modes=mode_calcs,
+            nd_steps=steps,
         )
 
         return calculator

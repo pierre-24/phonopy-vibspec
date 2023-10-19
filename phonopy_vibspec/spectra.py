@@ -14,26 +14,31 @@ class RamanSpectrum:
         frequencies: List[float],
         irrep_labels: Optional[List[str]] = None,
         dalpha_dq: Optional[NDArray[float]] = None,
-        # calculations
-        stencil: Optional[list] = None,
-        steps: List[float] = None,
-        dielectrics: Optional[NDArray] = None,
+        # nd
+        nd_stencil: Optional[list] = None,
+        nd_mode_equiv: Optional[List[int]] = None,
+        nd_modes: Optional[List[int]] = None,
+        nd_steps: List[float] = None,
+        nd_dielectrics: Optional[NDArray] = None,
     ):
         assert irrep_labels is None or len(irrep_labels) == len(modes)
         assert len(frequencies) == len(modes)
         assert dalpha_dq is None or dalpha_dq.shape[0] == len(modes)
 
-        assert steps is None or len(steps) == len(modes)
-        assert dielectrics is None or dielectrics.shape[0] == len(modes)
+        assert nd_mode_equiv is None or len(nd_mode_equiv) == len(modes)
+        assert nd_steps is None or len(nd_steps) == len(nd_modes)
+        assert nd_dielectrics is None or nd_dielectrics.shape[0] == len(nd_modes)
 
         self.modes = modes
         self.frequencies = frequencies
         self.irrep_labels = irrep_labels
         self.dalpha_dq = dalpha_dq
 
-        self.steps = steps
-        self.dielectrics = dielectrics
-        self.stencil = stencil
+        self.nd_stencil = nd_stencil
+        self.nd_mode_equiv = nd_mode_equiv
+        self.nd_modes = nd_modes
+        self.nd_steps = nd_steps
+        self.dielectrics = nd_dielectrics
 
     def __len__(self):
         return len(self.modes)
@@ -53,20 +58,25 @@ class RamanSpectrum:
             if 'input/dalpha_dq' in f:
                 dalpha_dq = f['input/dalpha_dq'][:]
 
-            stencil = None
-            steps = None
-            dielectrics = None
+            nd_stencil = None
+            nd_steps = None
+            nd_dielectrics = None
 
-            if 'numerical_differentiation' in f:
-                stencil = f['numerical_differentiation/stencil'][:]
-                steps = f['numerical_differentiation/steps'][:]
+            if 'nd' in f:
+                g_nd = f['nd']
 
-                if 'numerical_differentiation/dielectrics' in f:
-                    dielectrics = f['numerical_differentiation/dielectrics'][:]
+                nd_stencil = g_nd['stencil'][:]
+                nd_mode_equiv = g_nd['mode_equiv'][:]
+                nd_modes = g_nd['modes'][:]
+                nd_steps = g_nd['steps'][:]
+
+                if 'dielectrics' in g_nd:
+                    nd_dielectrics = g_nd['dielectrics'][:]
 
             return cls(
                 modes=modes, frequencies=frequencies, irrep_labels=irrep_labels, dalpha_dq=dalpha_dq,
-                stencil=stencil, steps=steps, dielectrics=dielectrics
+                nd_stencil=nd_stencil, nd_mode_equiv=nd_mode_equiv, nd_modes=nd_modes, nd_steps=nd_steps,
+                nd_dielectrics=nd_dielectrics
             )
 
     def to_hdf5(self, path: pathlib.Path):
@@ -84,14 +94,22 @@ class RamanSpectrum:
             if self.dalpha_dq:
                 g_input.create_dataset('dalpha_dq', data=self.dalpha_dq)
 
-            g_calcs = f.create_group('numerical_differentiation')
-            g_calcs.create_dataset('stencil', data=numpy.array(self.stencil))
+            g_nd = f.create_group('nd')
 
-            if self.steps:
-                g_calcs.create_dataset('steps', data=self.steps)
+            if self.nd_stencil:
+                g_nd.create_dataset('stencil', data=numpy.array(self.nd_stencil))
+
+            if self.nd_mode_equiv:
+                g_nd.create_dataset('mode_equiv', data=self.nd_mode_equiv)
+
+            if self.nd_modes:
+                g_nd.create_dataset('modes', data=self.nd_modes)
+
+            if self.nd_steps:
+                g_nd.create_dataset('steps', data=self.nd_steps)
 
             if self.dielectrics is not None:
-                g_calcs.create_dataset('dielectrics', data=self.dielectrics)
+                g_nd.create_dataset('dielectrics', data=self.dielectrics)
 
 
 class InfraredSpectrum:

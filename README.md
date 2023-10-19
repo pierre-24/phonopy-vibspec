@@ -32,7 +32,7 @@ phonopy -d --dim="1 1 1" -c unitcell.vasp
 rm POSCAR-*
 mv SPOSCAR POSCAR
 
-# 3. Run VASP using `IBRION=8` or `IBRION=6` and appropriate `POTIM`
+# 3. Run VASP using `IBRION=8` or `IBRION=6` with appropriate `POTIM`
 
 # 4. Extract force constants
 phonopy --fc --hdf5 vasprun.xml
@@ -40,10 +40,27 @@ phonopy --fc --hdf5 vasprun.xml
 
 For infrared:
 ```bash
-# 5. Run a calculation with `LEPSILON = .TRUE.` on the unit cell
+# 1. Run a calculation with `LEPSILON = .TRUE.` **on the unit cell**
 
-# 6. Extract Born effective charges from calculations
+# 2. Extract Born effective charges from calculations
 phonopy-vasp-born vasprun.xml > BORN
+
+# 3. Get IR spectrum
+...
+```
+
+For Raman:
+```bash
+# 1. Get displaced geometries
+phonopy-vs-create-displaced
+
+# 2. Run a calculation with `LEPSILON = .TRUE.` on each geometry
+
+# 3. Collect dielectric constants
+...
+
+# 4. Get Raman spectrum
+...
 ```
 
 ## Who?

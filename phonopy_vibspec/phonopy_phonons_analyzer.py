@@ -7,19 +7,22 @@ from phonopy.interface import calculator
 from numpy.typing import NDArray
 from typing import Optional, List
 
-
 THZ_TO_INV_CM = 33.35641
+
+# [(value, coef), ...]
+# see https://en.wikipedia.org/wiki/Finite_difference_coefficient
+TWO_POINTS_STENCIL = [[-1, -.5], [1, .5]]  # two-points, centered
 
 
 class PhonopyPhononsAnalyzer:
     def __init__(self, phonon: phonopy.Phonopy):
-        self.phonon = phonon
+        self.phonotopy = phonon
         self.supercell = phonon.supercell
 
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
-        self.phonon.symmetrize_force_constants()
-        self.phonon.run_mesh([1, 1, 1], with_eigenvectors=True)
+        self.phonotopy.symmetrize_force_constants()
+        self.phonotopy.run_mesh([1, 1, 1], with_eigenvectors=True)
 
         mesh_dict = phonon.get_mesh_dict()
 
@@ -32,7 +35,7 @@ class PhonopyPhononsAnalyzer:
         self.eigendisps = (self.eigenvectors / sqrt_masses[numpy.newaxis, :]).reshape(-1, self.N, 3)  # in [Å]
 
         # get irreps
-        self.phonon.set_irreps([0, 0, 0])
+        self.phonotopy.set_irreps([0, 0, 0])
         self.irreps = phonon.get_irreps()
         self.irrep_labels = [None] * (self.N * 3)
 
@@ -63,7 +66,7 @@ class PhonopyPhononsAnalyzer:
         Intensities are given in [e²/AMU].
         """
 
-        born_tensor = self.phonon.nac_params['born']
+        born_tensor = self.phonotopy.nac_params['born']
 
         # select modes if any
         disps = self.eigendisps
@@ -79,12 +82,14 @@ class PhonopyPhononsAnalyzer:
         disp: float = 1e-2,
         modes: Optional[List[int]] = None,
         ref: Optional[str] = None,
-        stencil: List[float] = [-.5, .5]
+        stencil: List[List[float]] = TWO_POINTS_STENCIL
     ):
         """
         Create a set of displaced geometries of the unitcell in `directory`.
-        The goal is to use a two point stencil, so two geometries are generated per mode.
-        Tries to be clever by only considered one mode if they are generated (E, T).
+        The number of geometries that are generated depends on the stencil.
+
+        The `modes` is a 0-based list of mode.
+        If `mode` is `None`,  all mode are selected, except the acoustic ones, and only one version of degenerated ones.
         """
 
         # select modes
@@ -97,27 +102,27 @@ class PhonopyPhononsAnalyzer:
                 modes.append(dgset[0])
 
         # create geometries
-        base_geometry = self.phonon.unitcell
+        base_geometry = self.phonotopy.unitcell
         raman_disps_info = []
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
                 raise IndexError(mode)
 
-            mode_displacement = disp
+            step = disp
             if ref == 'norm':
-                mode_displacement = disp / float(numpy.linalg.norm(self.eigendisps[mode]))
+                step = disp / float(numpy.linalg.norm(self.eigendisps[mode]))
 
-            raman_disps_info.append({'mode': mode, 'step': mode_displacement})
+            raman_disps_info.append({'mode': mode, 'step': step})
 
-            for i, value in enumerate(stencil):
+            for i, (value, _) in enumerate(stencil):
                 displaced_geometry = base_geometry.copy()
                 displaced_geometry.set_positions(
-                    base_geometry.positions + value * mode_displacement * self.eigendisps[mode]
+                    base_geometry.positions + value * step * self.eigendisps[mode]
                 )
 
                 calculator.write_crystal_structure(
-                    directory / 'unitcell_{:04d}_{:02d}.vasp'.format(mode, i),
+                    directory / 'unitcell_{:04d}_{:02d}.vasp'.format(mode + 1, i + 1),  # 1-based output
                     displaced_geometry,
                     interface_mode='vasp'
                 )

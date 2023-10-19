@@ -47,7 +47,11 @@ dev = [
 "Source" = "https://github.com/pierre-24/phonopy-vibspec/"
 
 [project.scripts]
+'phonopy-vs-ir' = 'phonopy_vibspec.scripts.spectrum_ir:main'
+
 'phonopy-vs-prepare-raman' = 'phonopy_vibspec.scripts.prepare_raman:main'
+'phonopy-vs-gather-raman' = 'phonopy_vibspec.scripts.gather_raman:main'
+'phonopy-vs-raman' = 'phonopy_vibspec.scripts.spectrum_raman:main'
 
 [tool.setuptools]
 packages = ['phonopy_vibspec', 'phonopy_vibspec.scripts']

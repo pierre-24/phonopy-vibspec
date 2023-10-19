@@ -2,9 +2,54 @@ import pathlib
 import h5py
 import numpy
 from numpy.typing import NDArray
-from typing import List, Optional
+from typing import List, Optional, TextIO, Tuple
 
 from phonopy.interface.vasp import VasprunxmlExpat
+
+from phonopy_vibspec import logger
+
+
+l_logger = logger.getChild(__name__)
+
+
+def gen_lorentzian(x: NDArray[float], mu: float, intensity: float, linewidth: float):
+    """Compute a Lorentzian.
+
+    :param mu: center (mean value)
+    :param area: total area (under the curve)
+    """
+
+    b = linewidth / 2
+    return (intensity / numpy.pi) * b / ((x - mu) ** 2 + b ** 2)
+
+
+def gen_spectrum(
+    peaks: List[float],
+    intensities: List[float],
+    linewidths: List[float],
+    spectrum_range: Tuple[float, float] = (400, 4000),
+    spectrum_resolution: float = 1
+) -> Tuple[NDArray[float], NDArray[float]]:
+    """
+    Create a spectrum containing Lorentzian for at each of the `peaks`.
+    """
+
+    assert len(linewidths) == len(peaks)
+    assert len(intensities) == len(peaks)
+
+    smin, smax = spectrum_range
+    if smax < smin:
+        smax, smin = smin, smax
+
+    npoints = int(numpy.ceil((smax - smin) / spectrum_resolution)) + 1
+
+    x = numpy.linspace(smin, smax, npoints, endpoint=True)
+    y = numpy.zeros(npoints)
+
+    for i in range(len(peaks)):
+        y += gen_lorentzian(x, peaks[i], intensities[i], linewidths[i])
+
+    return x, y
 
 
 class InfraredSpectrum:
@@ -30,6 +75,8 @@ class InfraredSpectrum:
 
     @classmethod
     def from_hdf5(cls, path: pathlib.Path):
+        l_logger.info('Read IR spectrum object from `{}`'.format(path))
+
         with h5py.File(path) as f:
             assert f.attrs['spectrum'] == 'IR'
 
@@ -49,6 +96,8 @@ class InfraredSpectrum:
             return cls(modes=modes, frequencies=frequencies, irrep_labels=irrep_labels, dmu_dq=dmu_dq)
 
     def to_hdf5(self, path: pathlib.Path):
+        l_logger.info('Write IR spectrum object in `{}`'.format(path))
+
         with h5py.File(path, 'w') as f:
             f.attrs['spectrum'] = 'IR'
             f.attrs['version'] = 1
@@ -64,6 +113,32 @@ class InfraredSpectrum:
         Intensities are given in [e²/AMU].
         """
         return (self.dmu_dq ** 2).sum(axis=1)
+
+    def to_csv(
+        self, f: TextIO,
+        linewidths: List[float],
+        spectrum_range: Tuple[float, float] = (400, 4000),
+        spectrum_resolution: float = 1
+    ):
+        l_logger.info('Write CSV file')
+
+        assert len(linewidths) == len(self)
+
+        # 1. Peak data
+        intensities = self.compute_intensities()
+
+        f.write('"Mode"\t"Frequency [cm⁻¹]"\t"Irrep."\t"Intensity [e²/AMU]"\n')
+        for i in range(len(self)):
+            f.write('{}\t{:.6f}\t"{}"\t{:.6f}\n'.format(
+                self.modes[i] + 1, self.frequencies[i], self.irrep_labels[i], intensities[i]
+            ))
+
+        f.write('\n\n')  # enough blank lines
+
+        # 2. Graph
+        f.write('"Frequency [cm⁻¹]"\t"Intensity [e²/AMU]"\n')
+        x, y = gen_spectrum(self.frequencies, intensities, linewidths, spectrum_range, spectrum_resolution)
+        f.write('\n'.join('{:.6f}\t{:.6f}'.format(xi, yi) for xi, yi in zip(x, y)))
 
 
 class RamanSpectrum:
@@ -107,6 +182,8 @@ class RamanSpectrum:
 
     @classmethod
     def from_hdf5(cls, path: pathlib.Path):
+        l_logger.info('Read Raman spectrum object from `{}`'.format(path))
+
         with h5py.File(path) as f:
             if 'input' not in f:
                 raise Exception('missing `input` group')
@@ -124,6 +201,8 @@ class RamanSpectrum:
             nd_stencil = None
             nd_steps = None
             nd_dielectrics = None
+            nd_mode_equiv = None
+            nd_modes = None
 
             if 'nd' in f:
                 g_nd = f['nd']
@@ -144,6 +223,8 @@ class RamanSpectrum:
             )
 
     def to_hdf5(self, path: pathlib.Path):
+        l_logger.info('Write Raman spectrum object in `{}`'.format(path))
+
         with h5py.File(path, 'w') as f:
             f.attrs['spectrum'] = 'Raman'
             f.attrs['version'] = 1
@@ -153,24 +234,24 @@ class RamanSpectrum:
             g_input.create_dataset('modes', data=self.modes)
             g_input.create_dataset('frequencies', data=self.frequencies)
 
-            if self.irrep_labels:
+            if self.irrep_labels is not None:
                 g_input.create_dataset('irrep_labels', data=[x.encode('utf-8') for x in self.irrep_labels])
 
-            if self.dalpha_dq:
+            if self.dalpha_dq is not None:
                 g_input.create_dataset('dalpha_dq', data=self.dalpha_dq)
 
             g_nd = f.create_group('nd')
 
-            if self.nd_stencil:
+            if self.nd_stencil is not None:
                 g_nd.create_dataset('stencil', data=numpy.array(self.nd_stencil))
 
-            if self.nd_mode_equiv:
+            if self.nd_mode_equiv is not None:
                 g_nd.create_dataset('mode_equiv', data=self.nd_mode_equiv)
 
-            if self.nd_modes:
+            if self.nd_modes is not None:
                 g_nd.create_dataset('modes', data=self.nd_modes)
 
-            if self.nd_steps:
+            if self.nd_steps is not None:
                 g_nd.create_dataset('steps', data=self.nd_steps)
 
             if self.dielectrics is not None:
@@ -190,6 +271,8 @@ class RamanSpectrum:
             imode = i // nsteps
             step = i % nsteps
 
+            l_logger.info('Read (mode={}, step={}) from `{}`'.format(self.nd_modes[imode], step, path))
+
             with path.open('rb') as f:
                 vasprun = VasprunxmlExpat(f)
                 vasprun.parse()
@@ -205,6 +288,8 @@ class RamanSpectrum:
 
     def _compute_dalpha_dq(self):
         assert self.dielectrics is not None
+
+        l_logger.info('Compute dα/dq_i using numerical differentiation')
 
         # compute:
         dadqs = numpy.zeros((len(self.nd_modes), 3, 3))
@@ -222,7 +307,7 @@ class RamanSpectrum:
 
     def _sq_alpha(self) -> NDArray[float]:
         """
-        Compute the first Raman invariant (β²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
+        Compute the first Raman invariant (α²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
         """
 
         assert self.dalpha_dq is not None
@@ -233,7 +318,7 @@ class RamanSpectrum:
 
     def _sq_beta(self) -> NDArray[float]:
         """
-        Compute the second Raman invariant (α²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
+        Compute the second Raman invariant (β²) for all modes, according to Eq. 7 of 10.1103/PhysRevB.54.7830
         """
 
         assert self.dalpha_dq is not None
@@ -268,3 +353,30 @@ class RamanSpectrum:
         b = self._sq_beta()
 
         return 3 * b / (45 * a + 4 * b)
+
+    def to_csv(
+        self, f: TextIO,
+        linewidths: List[float],
+        spectrum_range: Tuple[float, float] = (400, 4000),
+        spectrum_resolution: float = 1
+    ):
+        l_logger.info('Write CSV file')
+
+        assert len(linewidths) == len(self)
+
+        # 1. Peak data
+        intensities = self.compute_intensities()
+        rhos = self.compute_depolarization_ratios()
+
+        f.write('"Mode"\t"Frequency [cm⁻¹]"\t"Irrep."\t"Intensity [Å⁴/AMU]"\t"ρ"\n')
+        for i in range(len(self)):
+            f.write('{}\t{:.6f}\t"{}"\t{:.6f}\t{:.3f}\n'.format(
+                self.modes[i] + 1, self.frequencies[i], self.irrep_labels[i], intensities[i], rhos[i]
+            ))
+
+        f.write('\n\n')  # enough blank lines
+
+        # 2. Graph
+        f.write('"Frequency [cm⁻¹]"\t"Intensity [Å⁴/AMU]"\n')
+        x, y = gen_spectrum(self.frequencies, intensities, linewidths, spectrum_range, spectrum_resolution)
+        f.write('\n'.join('{:.6f}\t{:.6f}'.format(xi, yi) for xi, yi in zip(x, y)))

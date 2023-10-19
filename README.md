@@ -46,7 +46,7 @@ For infrared:
 phonopy-vasp-born vasprun.xml > BORN
 
 # 3. Get IR spectrum
-...
+phonopy-vs-ir spectrum.csv
 ```
 
 For Raman:
@@ -54,13 +54,16 @@ For Raman:
 # 1. Get displaced geometries
 phonopy-vs-prepare-raman
 
-# 2. Run a calculation with `LEPSILON = .TRUE.` on each geometry
+# 2. Create folders for calculations
+for i in dielec-*.vasp; do a=$(i%.vasp); mkdir -p $a; cd $a; ln -s ../$i POSCAR; cd ..; done; 
 
-# 3. Collect dielectric constants
-...
+# 3. Run calculations with `LEPSILON = .TRUE.` for each displaced geometry
+
+# 4. Collect dielectric constants
+phonopy-vs-gather-raman dielec-*/vasprun.xml
 
 # 4. Get Raman spectrum
-...
+phonopy-vs-raman spectrum.csv
 ```
 
 ## Who?

@@ -6,6 +6,7 @@ from phonopy.interface import calculator as phonopy_calculator
 
 from typing import Optional, List
 
+from phonopy_vibspec import logger
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 
 THZ_TO_INV_CM = 33.35641
@@ -15,22 +16,37 @@ THZ_TO_INV_CM = 33.35641
 TWO_POINTS_STENCIL = [(-1, -.5), (1, .5)]  # two-points, centered
 
 
+l_logger = logger.getChild(__name__)
+
+
 class PhononsAnalyzer:
     """Use Phonopy to extract phonon frequencies and eigenmodes, as well as irreps
     """
+
+    DC_GEOMETRY_TEMPLATE = 'dielec_mode{:04d}_step{:02d}.vasp'
+
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
         self.supercell = phonon.supercell
 
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
+        l_logger.info('Symmetrize force constant')
         self.phonotopy.symmetrize_force_constants()
+
+        l_logger.info('Run mesh')
         self.phonotopy.run_mesh([1, 1, 1], with_eigenvectors=True)
 
         mesh_dict = phonon.get_mesh_dict()
 
-        self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]
         self.N = self.supercell.get_number_of_atoms()
+        l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
+        self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]
+
+        l_logger.info('The 5 first modes are {}'.format(
+            ', '.join('{:.3f}'.format(x) for x in self.frequencies[:5]))
+        )
+
         self.eigenvectors = mesh_dict['eigenvectors'][0].real.T  # in  [Å sqrt(AMU)]
 
         # compute displacements with Eq. 4 of 10.1039/C7CP01680H
@@ -58,6 +74,8 @@ class PhononsAnalyzer:
         Use the Python interface of Phonopy, see https://phonopy.github.io/phonopy/phonopy-module.html.
         """
 
+        l_logger.info('Use `phonopy.load()`')
+
         return PhononsAnalyzer(phonopy.load(
             phonopy_yaml=phonopy_yaml,
             force_constants_filename=force_constants_filename,
@@ -69,6 +87,9 @@ class PhononsAnalyzer:
         The `modes` is a 0-based list of mode to include.
         If `modes` is None, then all non-acoustic modes are selected.
         """
+
+        l_logger.info('Create IR spectrum object')
+
         born_tensor = self.phonotopy.nac_params['born']
 
         # select modes if any
@@ -101,6 +122,8 @@ class PhononsAnalyzer:
         The `modes` is a 0-based list of mode to include.
         If `modes` is None, then all non-acoustic modes are selected.
         """
+
+        l_logger.info('Create displaced geometries')
 
         stencil = TWO_POINTS_STENCIL if stencil is None else stencil
 
@@ -145,11 +168,17 @@ class PhononsAnalyzer:
                     base_geometry.positions + value * step * self.eigendisps[mode]
                 )
 
+                path = directory / self.DC_GEOMETRY_TEMPLATE.format(mode + 1, i + 1)  # 1-based output
+                l_logger.debug('Write displaced geometry for (mode={}, step={}) in `{}`'.format(mode, i, path))
+
                 phonopy_calculator.write_crystal_structure(
-                    directory / 'unitcell_{:04d}_{:02d}.vasp'.format(mode + 1, i + 1),  # 1-based output
+                    path,
                     displaced_geometry,
                     interface_mode='vasp'
                 )
+
+        l_logger.info('{} geometries created'.format(len(stencil) * len(mode_calcs)))
+        l_logger.info('Create Raman spectrum object')
 
         calculator = RamanSpectrum(
             # input

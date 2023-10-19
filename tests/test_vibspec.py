@@ -81,7 +81,7 @@ def test_prepare_raman_SiO2(context_SiO2, tmp_path):
     # check if files have been created
     for i in range(len(spectrum)):
         mode = spectrum.modes[i]
-        f = tmp_path / 'unitcell_{:04d}_{:02d}.vasp'.format(mode + 1, 1)
+        f = tmp_path / PhononsAnalyzer.DC_GEOMETRY_TEMPLATE.format(mode + 1, 1)
         if spectrum.nd_mode_equiv[i] != mode:
             assert not f.exists()
         else:
@@ -137,7 +137,7 @@ def test_raman_spectrum_extract_dielectrics(context_SiO2):
     files = []
     for mode in spectrum.nd_modes:
         for i in range(nsteps):
-            files.append(calc_directory / 'unitcell_{:04d}_{:02d}'.format(mode + 1, i + 1) / 'vasprun.xml')
+            files.append(calc_directory / 'dielec_{:04d}_{:02d}'.format(mode + 1, i + 1) / 'vasprun.xml')
 
     spectrum.extract_dielectrics(files)
 

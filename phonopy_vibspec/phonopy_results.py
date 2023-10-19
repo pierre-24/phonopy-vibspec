@@ -14,7 +14,10 @@ class PhonopyResults:
         self.supercell = phonon.supercell
 
         # get eigenvalues and eigenvectors at gamma point
+        # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
+        self.phonon.symmetrize_force_constants()
         self.phonon.run_mesh([1, 1, 1], with_eigenvectors=True)
+
         mesh_dict = phonon.get_mesh_dict()
 
         self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]

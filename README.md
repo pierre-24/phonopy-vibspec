@@ -34,8 +34,8 @@ mv SPOSCAR POSCAR
 
 # 3. Run VASP using `IBRION=8` or `IBRION=6` with appropriate `POTIM`
 
-# 4. Extract force constants
-phonopy --fc --hdf5 vasprun.xml
+# 4. Extract force constants (a `force_constants.hdf5` file is created)
+phonopy --hdf5 --fc vasprun.xml
 ```
 
 For infrared:

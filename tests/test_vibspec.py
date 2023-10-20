@@ -161,4 +161,4 @@ def test_infrared_SiO2_supercell(context_SiO2_supercell):
     )
 
     # get spectrum
-    spectrum = phonons.infrared_spectrum()
+    phonons.infrared_spectrum()

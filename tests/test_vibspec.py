@@ -151,3 +151,14 @@ def test_raman_spectrum_extract_dielectrics(context_SiO2):
             assert raman_intensities[i] != pytest.approx(.0, abs=1e-3)
         else:
             assert raman_intensities[i] == pytest.approx(.0, abs=1e-3)
+
+
+def test_infrared_SiO2_supercell(context_SiO2_supercell):
+    phonons = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN'
+    )
+
+    # get spectrum
+    spectrum = phonons.infrared_spectrum()

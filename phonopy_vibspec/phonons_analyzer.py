@@ -27,7 +27,7 @@ class PhononsAnalyzer:
 
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
-        self.supercell = phonon.supercell
+        self.unitcell = phonon.unitcell
 
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
@@ -39,7 +39,7 @@ class PhononsAnalyzer:
 
         mesh_dict = phonon.get_mesh_dict()
 
-        self.N = self.supercell.get_number_of_atoms()
+        self.N = self.unitcell.get_number_of_atoms()
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
         self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]
 
@@ -50,7 +50,7 @@ class PhononsAnalyzer:
         self.eigenvectors = mesh_dict['eigenvectors'][0].real.T  # in  [Å sqrt(AMU)]
 
         # compute displacements with Eq. 4 of 10.1039/C7CP01680H
-        sqrt_masses = numpy.repeat(numpy.sqrt(self.supercell.masses), 3)
+        sqrt_masses = numpy.repeat(numpy.sqrt(self.unitcell.masses), 3)
         self.eigendisps = (self.eigenvectors / sqrt_masses[numpy.newaxis, :]).reshape(-1, self.N, 3)  # in [Å]
 
         # get irreps
@@ -144,7 +144,7 @@ class PhononsAnalyzer:
         mode_calcs = []
         steps = []
 
-        base_geometry = self.phonotopy.unitcell
+        base_geometry = self.unitcell
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:

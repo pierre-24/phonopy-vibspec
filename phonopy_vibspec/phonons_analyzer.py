@@ -205,12 +205,12 @@ class PhononsAnalyzer:
         self,
         directory: pathlib.Path,
         modes: Optional[List[int]] = None,
-        scaling: float = 10,
+        scaling: float = 2.0,
         radius: float = 0.15,
         color: Tuple[int, int, int] = (0, 255, 0)
     ):
         """Make a VESTA file for each `modes` (or all except acoustic if `mode` is None) containing a vector for
-        each atom, corresponding to the eigendisps.
+        each atom, corresponding to the eigenvector.
         """
 
         l_logger.info('Make VESTA files for each mode')
@@ -223,6 +223,8 @@ class PhononsAnalyzer:
         norms = numpy.linalg.norm(cell, axis=1)
         cart_to_cell = numpy.linalg.inv(cell)
 
+        eigv = self.eigenvectors.reshape(-1, self.N, 3)
+
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
                 raise IndexError(mode)
@@ -230,7 +232,7 @@ class PhononsAnalyzer:
             l_logger.info('Creating file for mode {}'.format(mode))
 
             # convert to coordinates along cell vectors
-            ceignedisps = numpy.einsum('ij,jk->ik', self.eigendisps[mode], cart_to_cell)
+            ceignedisps = numpy.einsum('ij,jk->ik', eigv[mode], cart_to_cell)
             ceigendisps = ceignedisps[:] * norms * scaling
 
             vectors = [

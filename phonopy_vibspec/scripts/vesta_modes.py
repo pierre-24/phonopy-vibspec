@@ -1,5 +1,5 @@
 """
-Create a VESTA file containing the atomic displacement for each mode
+Create a VESTA file containing the eigenvector for each mode
 """
 
 import argparse
@@ -32,7 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     add_common_args(parser)
 
-    parser.add_argument('-s', '--scaling', help='Scaling factor', type=float, default=10.0)
+    parser.add_argument('-s', '--scaling', help='Scaling factor', type=float, default=2.0)
     parser.add_argument('-r', '--radius', help='Radius of the vectors', type=float, default=0.15)
     parser.add_argument('--color', help='Color of the vectors', type=get_color, default='0 255 0')
 

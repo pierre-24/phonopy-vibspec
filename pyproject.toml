@@ -47,6 +47,8 @@ dev = [
 "Source" = "https://github.com/pierre-24/phonopy-vibspec/"
 
 [project.scripts]
+'phonopy-vs-modes' = 'phonopy_vibspec.scripts.vesta_modes:main'
+
 'phonopy-vs-ir' = 'phonopy_vibspec.scripts.spectrum_ir:main'
 
 'phonopy-vs-prepare-raman' = 'phonopy_vibspec.scripts.prepare_raman:main'

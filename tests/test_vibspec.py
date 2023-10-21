@@ -160,5 +160,22 @@ def test_infrared_SiO2_supercell(context_SiO2_supercell):
         born_filename='BORN'
     )
 
-    # get spectrum
-    phonons.infrared_spectrum()
+    # just check that everything goes without error
+    spectrum = phonons.infrared_spectrum()
+
+    assert len(spectrum) == 24
+
+
+def test_SiO2_vesta(context_SiO2, tmp_path):
+    phonons = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN'
+    )
+
+    # just check that everything goes without error
+    modes = [2, 3]
+    phonons.make_vesta_for_modes(tmp_path, modes)
+
+    for mode in modes:
+        assert (tmp_path / phonons.VESTA_MODE_TEMPLATE.format(mode + 1)).exists()

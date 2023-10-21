@@ -4,10 +4,11 @@ import numpy
 import phonopy
 from phonopy.interface import calculator as phonopy_calculator
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from phonopy_vibspec import logger
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
+from phonopy_vibspec.vesta import VestaVector, make_vesta_file
 
 THZ_TO_INV_CM = 33.35641
 
@@ -24,6 +25,7 @@ class PhononsAnalyzer:
     """
 
     DC_GEOMETRY_TEMPLATE = 'dielec_mode{:04d}_step{:02d}.vasp'
+    VESTA_MODE_TEMPLATE = 'mode{:04d}.vesta'
 
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
@@ -95,6 +97,10 @@ class PhononsAnalyzer:
         # select modes if any
         if modes is None:
             modes = list(range(3, 3 * self.N))
+        else:
+            for mode in modes:
+                if mode < 0 or mode >= 3 * self.N:
+                    raise IndexError(mode)
 
         frequencies = [self.frequencies[m] for m in modes]
         irrep_labels = [self.irrep_labels[m] for m in modes]
@@ -180,7 +186,7 @@ class PhononsAnalyzer:
         l_logger.info('{} geometries created'.format(len(stencil) * len(mode_calcs)))
         l_logger.info('Create Raman spectrum object')
 
-        calculator = RamanSpectrum(
+        spectrum = RamanSpectrum(
             # input
             cell_volume=base_geometry.volume,
             modes=modes,
@@ -193,4 +199,49 @@ class PhononsAnalyzer:
             nd_steps=steps,
         )
 
-        return calculator
+        return spectrum
+
+    def make_vesta_for_modes(
+        self,
+        directory: pathlib.Path,
+        modes: Optional[List[int]] = None,
+        scaling: float = 10,
+        radius: float = 0.15,
+        color: Tuple[int, int, int] = (0, 255, 0)
+    ):
+        """Make a VESTA file for each `modes` (or all except acoustic if `mode` is None) containing a vector for
+        each atom, corresponding to the eigendisps.
+        """
+
+        l_logger.info('Make VESTA files')
+
+        # select modes if any
+        if modes is None:
+            modes = list(range(3, 3 * self.N))
+
+        cell = self.unitcell.cell
+        norms = numpy.linalg.norm(cell, axis=1)
+        cart_to_cell = numpy.linalg.inv(cell)
+
+        for mode in modes:
+            if mode < 0 or mode >= 3 * self.N:
+                raise IndexError(mode)
+
+            l_logger.info('Creating file for mode {}'.format(mode))
+
+            # convert to coordinates along cell vectors
+            ceignedisps = numpy.einsum('ij,jk->ik', self.eigendisps[mode], cart_to_cell)
+            ceigendisps = ceignedisps[:] * norms * scaling
+
+            vectors = [
+                VestaVector(True, ceigendisps[i], [i], radius=radius, through_atom=True, color=color)
+                for i in range(self.N)
+            ]
+
+            with (directory / self.VESTA_MODE_TEMPLATE.format(mode + 1)).open('w') as f:
+                make_vesta_file(
+                    f,
+                    self.unitcell,
+                    vectors,
+                    title='Mode {} ({:.3f} cm⁻¹, {})'.format(mode + 1, self.frequencies[mode], self.irrep_labels[mode])
+                )

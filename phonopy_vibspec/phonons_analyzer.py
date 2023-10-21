@@ -213,7 +213,7 @@ class PhononsAnalyzer:
         each atom, corresponding to the eigendisps.
         """
 
-        l_logger.info('Make VESTA files')
+        l_logger.info('Make VESTA files for each mode')
 
         # select modes if any
         if modes is None:

@@ -38,6 +38,12 @@ mv SPOSCAR POSCAR
 phonopy --hdf5 --fc vasprun.xml
 ```
 
+Create files to vizualize the modes in [VESTA](http://jp-minerals.org/vesta/en/):
+
+```bash
+phonpy-vs-modes --modes="4 5 6"
+```
+
 For infrared:
 ```bash
 # 1. Run a calculation with `LEPSILON = .TRUE.` **on the unit cell**

@@ -29,7 +29,7 @@ class PhononsAnalyzer:
 
     def __init__(self, phonon: phonopy.Phonopy):
         self.phonotopy = phonon
-        self.unitcell = phonon.unitcell
+        self.structure = phonon.primitive
 
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
@@ -41,7 +41,7 @@ class PhononsAnalyzer:
 
         mesh_dict = phonon.get_mesh_dict()
 
-        self.N = self.unitcell.get_number_of_atoms()
+        self.N = self.structure.get_number_of_atoms()
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
         self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]
 
@@ -52,18 +52,22 @@ class PhononsAnalyzer:
         self.eigenvectors = mesh_dict['eigenvectors'][0].real.T  # in  [Å sqrt(AMU)]
 
         # compute displacements with Eq. 4 of 10.1039/C7CP01680H
-        sqrt_masses = numpy.repeat(numpy.sqrt(self.unitcell.masses), 3)
+        sqrt_masses = numpy.repeat(numpy.sqrt(self.structure.masses), 3)
         self.eigendisps = (self.eigenvectors / sqrt_masses[numpy.newaxis, :]).reshape(-1, self.N, 3)  # in [Å]
 
         # get irreps
-        self.phonotopy.set_irreps([0, 0, 0])
-        self.irreps = phonon.get_irreps()
-        self.irrep_labels = [''] * (self.N * 3)
+        self.irrep_labels = ['A'] * (self.N * 3)
 
-        # TODO: that's internal API, so subject to change!
-        for label, dgset in zip(self.irreps._get_ir_labels(), self.irreps._degenerate_sets):
-            for j in dgset:
-                self.irrep_labels[j] = label
+        try:
+            self.phonotopy.set_irreps([0, 0, 0])
+            self.irreps = phonon.get_irreps()
+
+            # TODO: that's internal API, so subject to change!
+            for label, dgset in zip(self.irreps._get_ir_labels(), self.irreps._degenerate_sets):
+                for j in dgset:
+                    self.irrep_labels[j] = label
+        except RuntimeError as e:
+            l_logger.warn('Error while computing irreps ({}). Incorrect labels will be assigned.'.format(e))
 
     @classmethod
     def from_phonopy(
@@ -150,7 +154,7 @@ class PhononsAnalyzer:
         mode_calcs = []
         steps = []
 
-        base_geometry = self.unitcell
+        base_geometry = self.structure
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
@@ -211,6 +215,8 @@ class PhononsAnalyzer:
     ):
         """Make a VESTA file for each `modes` (or all except acoustic if `mode` is None) containing a vector for
         each atom, corresponding to the eigenvector.
+
+        Note: this use the primitive cell, which might not be equal to the unit cell, so this might be confusing.
         """
 
         l_logger.info('Make VESTA files for each mode')
@@ -219,7 +225,7 @@ class PhononsAnalyzer:
         if modes is None:
             modes = list(range(3, 3 * self.N))
 
-        cell = self.unitcell.cell
+        cell = self.structure.cell
         norms = numpy.linalg.norm(cell, axis=1)
         cart_to_cell = numpy.linalg.inv(cell)
 
@@ -243,7 +249,7 @@ class PhononsAnalyzer:
             with (directory / self.VESTA_MODE_TEMPLATE.format(mode + 1)).open('w') as f:
                 make_vesta_file(
                     f,
-                    self.unitcell,
+                    self.structure,
                     vectors,
                     title='Mode {} ({:.3f} cm⁻¹, {})'.format(mode + 1, self.frequencies[mode], self.irrep_labels[mode])
                 )

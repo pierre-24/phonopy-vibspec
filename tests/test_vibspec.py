@@ -179,3 +179,20 @@ def test_SiO2_vesta(context_SiO2, tmp_path):
 
     for mode in modes:
         assert (tmp_path / phonons.VESTA_MODE_TEMPLATE.format(mode + 1)).exists()
+
+
+def test_CaO_vesta(context_CaO, tmp_path):
+    # Irreps analysis requires primitive cell, which in this case is not equal to the unit cell!!
+
+    phonons = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+    )
+
+    # just check that everything goes without error
+    modes = [0, 3]
+    assert phonons.irrep_labels != ['A'] * (3 * phonons.N)
+    phonons.make_vesta_for_modes(tmp_path, modes)
+
+    for mode in modes:
+        assert (tmp_path / phonons.VESTA_MODE_TEMPLATE.format(mode + 1)).exists()

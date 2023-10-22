@@ -12,3 +12,9 @@ def context_SiO2(monkeypatch):
 def context_SiO2_supercell(monkeypatch):
     dir_ = pathlib.Path(__file__).parent / 'tests_files/SiO2_supercell'
     monkeypatch.chdir(dir_)
+
+
+@pytest.fixture
+def context_CaO(monkeypatch):
+    dir_ = pathlib.Path(__file__).parent / 'tests_files/CaO'
+    monkeypatch.chdir(dir_)

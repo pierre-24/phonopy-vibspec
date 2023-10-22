@@ -256,9 +256,12 @@ def make_vesta_file(f: TextIO, structure: PhonopyAtoms, vectors: Optional[List[V
     # add bond search parameters the best we can (e.g., sum of covalent radii for each pair)
     f.write('SBOND\n')
     symbols_set = list(set(structure.symbols))
-    idx = 0
+    idx = -1
     for i, si in enumerate(symbols_set):
         for sj in symbols_set[i:]:
+            if si == sj and si != 'C':  # avoid bonds between the same element, as it seems to confuse VESTA
+                continue
+
             idx += 1
 
             f.write('{:>4} {:>4s} {:>4} {:10.6f} {:10.6f} {:2} {:2} {:2} {:2} {:2} {:10.6f}  {:10.6f}'

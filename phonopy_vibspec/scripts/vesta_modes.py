@@ -33,8 +33,14 @@ def main():
     add_common_args(parser)
 
     parser.add_argument('-s', '--scaling', help='Scaling factor', type=float, default=2.0)
-    parser.add_argument('-r', '--radius', help='Radius of the vectors', type=float, default=0.15)
+    parser.add_argument('-r', '--radius', help='Radius of the vectors', type=float, default=0.30)
     parser.add_argument('--color', help='Color of the vectors', type=get_color, default='0 255 0')
+    parser.add_argument(
+        '--threshold',
+        help='Remove vectors that are below a certain percentage of the largest one',
+        type=float,
+        default=0.05
+    )
 
     args = parser.parse_args()
 
@@ -48,7 +54,8 @@ def main():
         modes=args.modes if len(args.modes) > 0 else None,
         scaling=args.scaling,
         radius=args.radius,
-        color=args.color
+        color=args.color,
+        threshold=args.threshold
     )
 
 

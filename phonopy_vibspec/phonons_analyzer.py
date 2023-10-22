@@ -210,8 +210,9 @@ class PhononsAnalyzer:
         directory: pathlib.Path,
         modes: Optional[List[int]] = None,
         scaling: float = 2.0,
-        radius: float = 0.15,
-        color: Tuple[int, int, int] = (0, 255, 0)
+        radius: float = 0.30,
+        color: Tuple[int, int, int] = (0, 255, 0),
+        threshold: float = 0.05,
     ):
         """Make a VESTA file for each `modes` (or all except acoustic if `mode` is None) containing a vector for
         each atom, corresponding to the eigenvector.
@@ -230,6 +231,7 @@ class PhononsAnalyzer:
         cart_to_cell = numpy.linalg.inv(cell)
 
         eigv = self.eigenvectors.reshape(-1, self.N, 3)
+        eigv_norms = numpy.linalg.norm(eigv, axis=2)
 
         for mode in modes:
             if mode < 0 or mode >= 3 * self.N:
@@ -237,13 +239,15 @@ class PhononsAnalyzer:
 
             l_logger.info('Creating file for mode {}'.format(mode))
 
+            max_norm = eigv_norms[mode].max()
+
             # convert to coordinates along cell vectors
             ceignedisps = numpy.einsum('ij,jk->ik', eigv[mode], cart_to_cell)
             ceigendisps = ceignedisps[:] * norms * scaling
 
             vectors = [
-                VestaVector(True, ceigendisps[i], [i], radius=radius, through_atom=True, color=color)
-                for i in range(self.N)
+                VestaVector(True, ceigendisps[i], [i], radius=radius, through_atom=True, color=color, add_radius=True)
+                for i in range(self.N) if eigv_norms[mode][i] > threshold * max_norm
             ]
 
             with (directory / self.VESTA_MODE_TEMPLATE.format(mode + 1)).open('w') as f:

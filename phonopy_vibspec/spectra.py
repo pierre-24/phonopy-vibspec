@@ -105,7 +105,9 @@ class InfraredSpectrum:
             g_input = f.create_group('input')
             g_input.create_dataset('modes', data=self.modes)
             g_input.create_dataset('frequencies', data=self.frequencies)
-            g_input.create_dataset('irrep_labels', data=[x.encode('utf-8') for x in self.irrep_labels])
+            g_input.create_dataset('irrep_labels', data=[
+                (x.encode('utf-8') if x is not None else '?'.encode('utf-8')) for x in self.irrep_labels
+            ])
             g_input.create_dataset('dmu_dq', data=self.dmu_dq)
 
     def compute_intensities(self) -> NDArray[float]:
@@ -130,7 +132,10 @@ class InfraredSpectrum:
         f.write('"Mode"\t"Frequency [cm⁻¹]"\t"Irrep."\t"Intensity [e²/AMU]"\n')
         for i in range(len(self)):
             f.write('{}\t{:.6f}\t"{}"\t{:.6f}\n'.format(
-                self.modes[i] + 1, self.frequencies[i], self.irrep_labels[i], intensities[i]
+                self.modes[i] + 1,
+                self.frequencies[i],
+                self.irrep_labels[i] if self.irrep_labels[i] is not None else '?',
+                intensities[i]
             ))
 
         f.write('\n\n')  # enough blank lines

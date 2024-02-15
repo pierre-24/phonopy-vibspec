@@ -1,16 +1,17 @@
 import pathlib
 import numpy
 
+from numpy.typing import NDArray
+
 import phonopy
 from phonopy.interface import calculator as phonopy_calculator
 
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 from phonopy_vibspec import logger
+from phonopy.units import VaspToCm
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 from phonopy_vibspec.vesta import VestaVector, make_vesta_file
-
-THZ_TO_INV_CM = 33.35641
 
 # [(value, coef), ...]
 # see https://en.wikipedia.org/wiki/Finite_difference_coefficient
@@ -21,35 +22,37 @@ l_logger = logger.getChild(__name__)
 
 
 class PhononsAnalyzer:
-    """Use Phonopy to extract phonon frequencies and eigenmodes, as well as irreps
+    """Use Phonopy to extract phonon frequencies and eigenmodes, as well as irreps, at a given q-point
+    (default is Gamma).
     """
 
     DC_GEOMETRY_TEMPLATE = 'dielec_mode{:04d}_step{:02d}.vasp'
     VESTA_MODE_TEMPLATE = 'mode{:04d}.vesta'
 
-    def __init__(self, phonon: phonopy.Phonopy):
-        self.phonotopy = phonon
+    def __init__(self, phonon: phonopy.Phonopy, q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0)):
+        self.phonopy = phonon
+        self.q = q
         self.structure = phonon.primitive
 
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
         l_logger.info('Symmetrize force constant')
-        self.phonotopy.symmetrize_force_constants()
+        self.phonopy.symmetrize_force_constants()
 
-        l_logger.info('Run mesh')
-        self.phonotopy.run_mesh([1, 1, 1], with_eigenvectors=True)
-
-        mesh_dict = phonon.get_mesh_dict()
+        l_logger.info('Fetch dynamical matrix at q=({})'.format(', '.join('{:.3f}'.format(x) for x in q)))
+        self.phonopy.dynamical_matrix.run(self.q)
+        dm = self.phonopy.dynamical_matrix.dynamical_matrix
+        eigv, eigf = numpy.linalg.eigh(dm)
 
         self.N = self.structure.get_number_of_atoms()
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
-        self.frequencies = mesh_dict['frequencies'][0] * THZ_TO_INV_CM  # in [cm⁻¹]
+        self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real) * VaspToCm  # in [cm⁻¹]
 
-        l_logger.info('The 5 first modes are {}'.format(
+        l_logger.info('The 5 first modes are at (in cm⁻¹) {}'.format(
             ', '.join('{:.3f}'.format(x) for x in self.frequencies[:5]))
         )
 
-        self.eigenvectors = mesh_dict['eigenvectors'][0].real.T  # in  [Å sqrt(AMU)]
+        self.eigenvectors = eigf.real.T  # in  [Å sqrt(AMU)]
 
         # compute displacements with Eq. 4 of 10.1039/C7CP01680H
         sqrt_masses = numpy.repeat(numpy.sqrt(self.structure.masses), 3)
@@ -59,7 +62,7 @@ class PhononsAnalyzer:
         self.irrep_labels = ['A'] * (self.N * 3)
 
         try:
-            self.phonotopy.set_irreps([0, 0, 0])
+            self.phonopy.set_irreps([0, 0, 0])
             self.irreps = phonon.get_irreps()
 
             # TODO: that's internal API, so subject to change!
@@ -96,11 +99,11 @@ class PhononsAnalyzer:
 
         l_logger.info('Create IR spectrum object')
 
-        born_tensor = self.phonotopy.nac_params['born']
+        born_tensor = self.phonopy.nac_params['born']
 
         # select modes if any
         if modes is None:
-            modes = list(range(3, 3 * self.N))
+            modes = list(range(3 if numpy.allclose(self.q, [.0, .0, .0]) else 0, 3 * self.N))
         else:
             for mode in modes:
                 if mode < 0 or mode >= 3 * self.N:
@@ -139,7 +142,11 @@ class PhononsAnalyzer:
 
         # select modes if any
         if modes is None:
-            modes = list(range(3, 3 * self.N))
+            modes = list(range(3 if numpy.allclose(self.q, [.0, .0, .0]) else 0, 3 * self.N))
+        else:
+            for mode in modes:
+                if mode < 0 or mode >= 3 * self.N:
+                    raise IndexError(mode)
 
         frequencies = [self.frequencies[m] for m in modes]
         irrep_labels = [self.irrep_labels[m] for m in modes]

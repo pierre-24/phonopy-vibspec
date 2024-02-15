@@ -62,7 +62,7 @@ class PhononsAnalyzer:
         self.irrep_labels = ['A'] * (self.N * 3)
 
         try:
-            self.phonopy.set_irreps([0, 0, 0])
+            self.phonopy.set_irreps(q)
             self.irreps = phonon.get_irreps()
 
             # TODO: that's internal API, so subject to change!
@@ -77,7 +77,8 @@ class PhononsAnalyzer:
         cls,
         phonopy_yaml: str = 'phonopy_disp.yaml',
         force_constants_filename: str = 'force_constants.hdf5',
-        born_filename: Optional[str] = None
+        born_filename: Optional[str] = None,
+        q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0)
     ) -> 'PhononsAnalyzer':
         """
         Use the Python interface of Phonopy, see https://phonopy.github.io/phonopy/phonopy-module.html.
@@ -89,7 +90,7 @@ class PhononsAnalyzer:
             phonopy_yaml=phonopy_yaml,
             force_constants_filename=force_constants_filename,
             born_filename=born_filename,
-        ))
+        ), q=q)
 
     def infrared_spectrum(self, modes: Optional[List[int]] = None) -> InfraredSpectrum:
         """

@@ -9,6 +9,17 @@ def list_of_modes(inp: str) -> List[int]:
         raise argparse.ArgumentTypeError('invalid (space-separated) list of integers `{}` for modes'.format(inp))
 
 
+def q_point(inp: str) -> Tuple[float, float, float]:
+    chunks = inp.split()
+    if len(chunks) != 3:
+        raise argparse.ArgumentTypeError('invalid (space-separated) q-point `{}`, must contains 3 elements'.format(inp))
+
+    try:
+        return tuple(float(x) for x in chunks)
+    except ValueError:
+        raise argparse.ArgumentTypeError('invalid (space-separated) list of floats `{}` for q-point'.format(inp))
+
+
 def add_common_args(parser: argparse.ArgumentParser):
     parser.add_argument(
         '-c', '--phonopy', type=str, help='Phonopy YAML containing the cells', default='phonopy_disp.yaml')
@@ -16,6 +27,12 @@ def add_common_args(parser: argparse.ArgumentParser):
         '--fc', type=str, help='Force constant filename', default='force_constants.hdf5')
 
     parser.add_argument('-m', '--modes', type=list_of_modes, help='List of modes (1-based)', default='')
+
+    parser.add_argument(
+        '-q',
+        type=q_point,
+        help='q-point at which this should be computed (default is gamma)',
+        default='0 0 0')
 
 
 def interval(s_interval: str) -> Tuple[float, float]:

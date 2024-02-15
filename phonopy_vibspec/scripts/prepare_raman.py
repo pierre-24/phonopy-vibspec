@@ -23,6 +23,7 @@ def main():
     phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml=args.phonopy,
         force_constants_filename=args.fc,
+        q=args.q
     )
 
     raman_spectrum = phonons.prepare_raman(

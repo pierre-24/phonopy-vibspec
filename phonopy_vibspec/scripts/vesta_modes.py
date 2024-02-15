@@ -47,6 +47,7 @@ def main():
     phonons = PhononsAnalyzer.from_phonopy(
         phonopy_yaml=args.phonopy,
         force_constants_filename=args.fc,
+        q=args.q
     )
 
     phonons.make_vesta_for_modes(

@@ -34,6 +34,11 @@ class PhononsAnalyzer:
         self.q = q
         self.structure = phonon.primitive
 
+        # masses = self.structure.masses
+        # masses[:18] = 10000
+        # masses[36:54] = 10000
+        # self.structure.masses = masses
+
         # get eigenvalues and eigenvectors at gamma point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
         l_logger.info('Symmetrize force constant')

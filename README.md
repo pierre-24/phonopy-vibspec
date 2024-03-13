@@ -22,9 +22,10 @@ Note: as this script install programs, you might need to add their location (suc
 ## Usage
 
 Common procedure:
+
+If you can use [DFPT]( https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface):
 ```bash
 # 1. Create POSCAR of supercell:
-# (from https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface)
 phonopy -d --dim="1 1 1" -c unitcell.vasp 
 # Note: use preferentially a larger cell
 
@@ -37,6 +38,25 @@ mv SPOSCAR POSCAR
 # 4. Extract force constants (a `force_constants.hdf5` file is created)
 phonopy --hdf5 --fc vasprun.xml
 ```
+
+Otherwise (see [there](https://phonopy.github.io/phonopy/vasp.html)):
+```bash
+# 1. Create POSCAR of supercell:
+phonopy -d --dim="1 1 1" -c unitcell.vasp 
+# Note: use preferentially a larger cell
+
+# 2. Create folders for calculations
+for i in POSCAR-*; do a=${i/POSCAR/disp}; mkdir -p $a; mv $i ${a}/POSCAR; done; 
+
+# 3. Run VASP using `IBRION=-1`
+
+# 4. Extract force sets
+phonopy -f disp-*/vasprun.xml
+
+# 5. Compute force constants (a `force_constants.hdf5` file is created)
+phonopy --writefc-format HDF5 --writefc
+```
+
 
 Create files to vizualize the modes in [VESTA](http://jp-minerals.org/vesta/en/):
 

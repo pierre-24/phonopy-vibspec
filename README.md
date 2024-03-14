@@ -9,88 +9,9 @@ Then, calculation(s) of the dielectric matrix provide the IR and Raman intensiti
 Note: this is actually a simpler (and packaged!) version of [`Phonopy-Spectroscopy`](https://github.com/skelton-group/Phonopy-Spectroscopy). The main difference with the latter is that this package does not include phonon line widths (and thus does not require `phono3py`).
 If you are interested in that (or polarized Raman), use their code instead :)
 
-## Install
+## Install and usage
 
-To install this package, you need a running Python 3 installation (Python >= 3.10 recommended), and
-
-```bash
-pip3 install git+https://github.com/pierre-24/phonopy-vibspec.git
-```
-
-Note: as this script install programs, you might need to add their location (such as `$HOME/.local/bin`, if you use `--user`) to your `$PATH`, if any.
-
-## Usage
-
-Common procedure:
-
-If you can use [DFPT]( https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface):
-```bash
-# 1. Create POSCAR of supercell:
-phonopy -d --dim="1 1 1" -c unitcell.vasp 
-# Note: use preferentially a larger cell
-
-# 2. cleanup
-rm POSCAR-*
-mv SPOSCAR POSCAR
-
-# 3. Run VASP using `IBRION=8` or `IBRION=6` with appropriate `POTIM`
-
-# 4. Extract force constants (a `force_constants.hdf5` file is created)
-phonopy --hdf5 --fc vasprun.xml
-```
-
-Otherwise (see [there](https://phonopy.github.io/phonopy/vasp.html)):
-```bash
-# 1. Create POSCAR of supercell:
-phonopy -d --dim="1 1 1" -c unitcell.vasp 
-# Note: use preferentially a larger cell
-
-# 2. Create folders for calculations
-for i in POSCAR-*; do a=${i/POSCAR/disp}; mkdir -p $a; mv $i ${a}/POSCAR; done; 
-
-# 3. Run VASP using `IBRION=-1`
-
-# 4. Extract force sets
-phonopy -f disp-*/vasprun.xml
-
-# 5. Compute force constants (a `force_constants.hdf5` file is created)
-phonopy --writefc-format HDF5 --writefc
-```
-
-
-Create files to vizualize the modes in [VESTA](http://jp-minerals.org/vesta/en/):
-
-```bash
-phonpy-vs-modes --modes="4 5 6"
-```
-
-For infrared:
-```bash
-# 1. Run a calculation with `LEPSILON = .TRUE.` **on the unit cell**
-
-# 2. Extract Born effective charges from calculations
-phonopy-vasp-born vasprun.xml > BORN
-
-# 3. Get IR spectrum
-phonopy-vs-ir spectrum.csv
-```
-
-For Raman:
-```bash
-# 1. Get displaced geometries
-phonopy-vs-prepare-raman
-
-# 2. Create folders for calculations
-for i in dielec-*.vasp; do a=$(i%.vasp); mkdir -p $a; cd $a; ln -s ../$i POSCAR; cd ..; done; 
-
-# 3. Run calculations with `LEPSILON = .TRUE.` for each displaced geometry
-
-# 4. Collect dielectric constants
-phonopy-vs-gather-raman dielec-*/vasprun.xml
-
-# 4. Get Raman spectrum
-phonopy-vs-raman spectrum.csv
-```
+See [DOCUMENTATION.md](DOCUMENTATION.md)
 
 ## Who?
 

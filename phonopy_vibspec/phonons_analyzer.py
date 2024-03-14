@@ -95,7 +95,10 @@ class PhononsAnalyzer:
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
         self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real) * VaspToCm  # in [cm⁻¹]
 
-        l_logger.info('The 5 first modes are at (in cm⁻¹) {}'.format(
+        if self.frequencies[0] < -30:
+            l_logger.warn('The first frequency is very small: {:.3f} cm⁻¹'.format(self.frequencies[0]))
+
+        l_logger.info('The 5 first modes are {}'.format(
             ', '.join('{:.3f}'.format(x) for x in self.frequencies[:5]))
         )
 

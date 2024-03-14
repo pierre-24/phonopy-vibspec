@@ -34,6 +34,8 @@ def add_common_args(parser: argparse.ArgumentParser):
         help='q-point at which this should be computed (default is gamma)',
         default='0 0 0')
 
+    parser.add_argument('-O', '--only', type=str, help='only consider certain atoms', default='')
+
 
 def interval(s_interval: str) -> Tuple[float, float]:
     """get interval

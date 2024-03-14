@@ -69,7 +69,7 @@ def test_prepare_raman_SiO2(context_SiO2, tmp_path):
 
     spectrum = phonons.prepare_raman(tmp_path)
 
-    assert spectrum.cell_volume == phonons.phonotopy.unitcell.volume
+    assert spectrum.cell_volume == phonons.phonopy.unitcell.volume
     assert len(spectrum.modes) == 24  # skip acoustic
     assert numpy.allclose(spectrum.frequencies, phonons.frequencies[3:])
     assert spectrum.irrep_labels == phonons.irrep_labels[3:]

@@ -72,6 +72,7 @@ class PhononsAnalyzer:
         self.q = q
         self.structure = phonon.primitive
 
+        # set some masses to an excessive value, to silence those atoms if any
         if only is not None:
             masses = self.structure.masses
             indices = get_list(only, masses.shape[0])
@@ -81,7 +82,7 @@ class PhononsAnalyzer:
 
             phonon.primitive.masses = masses
 
-        # get eigenvalues and eigenvectors at gamma point
+        # get eigenvalues and eigenvectors at a given q point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
         l_logger.info('Symmetrize force constant')
         self.phonopy.symmetrize_force_constants()

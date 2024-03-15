@@ -87,6 +87,14 @@ You can control the latter using different command line options:
 + `--each=1`, the interval between each point (in cm⁻¹);
 + `--linewidth=5`, the linewidth of the Lorentzian (in cm⁻¹);
 
+It is also possible to compute spectra at other `q` points in the Brilouin zone:
+
+```bash
+phonopy-vs-ir -q="0.5 0 0" spectrum_0.5.csv
+```
+
+Note that Phonopy is generally not able to assign symmetry labels in that case.
+
 ## Raman spectrum
 
 ```bash

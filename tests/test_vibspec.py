@@ -3,8 +3,18 @@ import pathlib
 import numpy
 import pytest
 
-from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL
+from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL, get_list
 from phonopy_vibspec.spectra import InfraredSpectrum, RamanSpectrum
+
+
+def test_get_list():
+    assert get_list('1-3', 10) == {0, 1, 2}
+    assert get_list('1-3 5', 10) == {0, 1, 2, 4}
+    assert get_list('1-3 8-*', 10) == {0, 1, 2, 7, 8, 9}
+    assert get_list('1-3 2', 10) == {0, 1, 2}
+
+    with pytest.raises(ValueError):
+        get_list('1-3 8-11', 10)
 
 
 def test_infrared_SiO2(context_SiO2):
@@ -36,6 +46,23 @@ def test_infrared_SiO2(context_SiO2):
             assert ir_intensities[i] != pytest.approx(.0, abs=1e-8)
         else:
             assert ir_intensities[i] == pytest.approx(.0, abs=1e-8)
+
+
+def test_infrared_SiO2_only(context_SiO2):
+    phonons = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN'
+    )
+
+    phonons_with_only = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN',
+        only='1-3'
+    )
+
+    assert not numpy.allclose(phonons.frequencies, phonons_with_only.frequencies)
 
 
 def test_infrared_spectrum_save_SiO2(context_SiO2, tmp_path):

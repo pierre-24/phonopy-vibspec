@@ -22,7 +22,8 @@ def main():
         phonopy_yaml=args.phonopy,
         force_constants_filename=args.fc,
         born_filename=args.born,
-        q=args.q
+        q=args.q,
+        only=args.only if args.only != '' else None
     )
 
     ir_spectrum = phonons.infrared_spectrum(modes=args.modes if len(args.modes) > 0 else None)

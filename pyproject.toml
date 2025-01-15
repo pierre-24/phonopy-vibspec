@@ -48,6 +48,7 @@ dev = [
 
 [project.scripts]
 'phonopy-vs-modes' = 'phonopy_vibspec.scripts.vesta_modes:main'
+'phonopy-analyze-modes' = 'phonopy_vibspec.scripts.mode_analysis:main'
 
 'phonopy-vs-ir' = 'phonopy_vibspec.scripts.spectrum_ir:main'
 

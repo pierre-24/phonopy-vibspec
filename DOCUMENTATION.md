@@ -25,7 +25,7 @@ Long story short, in order to get a spectra, one needs to:
 
 To get the force constant, you need to use [`Phonopy`](https://phonopy.github.io/phonopy/index.html) (which is installed since it is a dependency of this package) as usual.
 
-On the one hand, if you can use [DFPT]( https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface) (which is recommended), the procedure is the following:
+On the one hand, if you can use [DFPT](https://phonopy.github.io/phonopy/vasp-dfpt.html#vasp-dfpt-interface) (which is recommended), the procedure is the following:
 
 ```bash
 # 1. Create POSCAR of supercell:

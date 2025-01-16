@@ -80,7 +80,7 @@ class PhononsAnalyzer:
             for i in not_considered:
                 masses[i] = HUGE_MASS
 
-            phonon.primitive.masses = masses
+            self.structure.masses = masses
 
         # get eigenvalues and eigenvectors at a given q point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200

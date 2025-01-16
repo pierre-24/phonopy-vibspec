@@ -84,7 +84,7 @@ EDIFF = 1.0e-08 ! stricter criterion for energy convergence
 PREC = Accurate  ! increase precision
 ```
 
-### Visualisation of the normal modes
+### Visualisation and interpretation of the normal modes
 
 If you want, you can then create files to visualize the modes in [VESTA](http://jp-minerals.org/vesta/en/):
 
@@ -93,6 +93,18 @@ phonopy-vs-modes --modes="4 5 6"
 ```
 
 A `modexxx.vesta` is created per mode.
+
+Furthermore, a partial analysis of normal modes is available: it estimates the percentage of translation, rotation, and vibration of normal modes.
+
+```bash
+phonopy-vs-analyze-modes
+```
+
+However, to determine the rotation, the program needs a center of rotation.
+By default, it is taken as the center of mass. You can manually set it with `-C`, *e.g.* `-C ".5 .5 .5"` for the center of the cell (this center is to be given in **fractional coordinates**).
+It is also possible to "unwrap" the cell (i.e., move atoms close together), which gives better results for single molecules.
+
+**Note:** negative vibrational contributions are sometimes reported. Keep in mind that this is an estimate.
 
 ### Infrared spectrum
 

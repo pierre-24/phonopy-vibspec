@@ -5,6 +5,7 @@ Create displaced geometries for Raman activity calculations
 import argparse
 import pathlib
 
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
 from phonopy_vibspec.scripts import add_common_args
 
@@ -30,7 +31,9 @@ def main():
         pathlib.Path.cwd(),
         disp=args.displacement,
         ref=args.ref,
-        modes=args.modes if len(args.modes) > 0 else None
+        modes=[
+            x - 1 for x in GetListWithinBounds(1, 3 * phonons.N)(args.modes)
+        ] if len(args.modes) > 0 else None
     )
 
     raman_spectrum.to_hdf5(args.output)

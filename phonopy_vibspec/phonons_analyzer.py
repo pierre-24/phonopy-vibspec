@@ -6,10 +6,11 @@ from numpy.typing import NDArray
 import phonopy
 from phonopy.interface import calculator as phonopy_calculator
 
-from typing import Optional, List, Tuple, Union, Set
+from typing import Optional, List, Tuple, Union
 
-from phonopy_vibspec import logger
+from phonopy_vibspec import logger, GetListWithinBounds
 from phonopy.units import VaspToCm
+
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 from phonopy_vibspec.vesta import VestaVector, make_vesta_file
 
@@ -22,36 +23,6 @@ HUGE_MASS = 10000  # AMU
 
 
 l_logger = logger.getChild(__name__)
-
-
-def get_list(inp: str, max_index: int) -> Set[int]:
-    """Get a list of atom indices, so that ranges (i.e., `1-3` = `[0, 1, 2]`) and wildcard (i.e., 2-*` = `[2, 3 ...]`)
-    are supported.
-    """
-    lst = set()
-    for x in inp.split():
-        if '-' in x:
-            chunks = x.split('-')
-            if len(chunks) != 2:
-                raise ValueError('{} sould contain 2 elements'.format(x))
-
-            b = int(chunks[0])
-            if b < 1:
-                raise ValueError('{} should be larger than 0'.format(b))
-
-            if chunks[1] == '*':
-                e = max_index
-            else:
-                e = int(chunks[1])
-                if e > max_index:
-                    raise ValueError(e)
-                if e < 0:
-                    raise ValueError('{} should be larger than 0'.format(e))
-
-            lst |= set(range(b - 1, e))
-        else:
-            lst.add(int(x) - 1)
-    return lst
 
 
 class PhononsAnalyzer:
@@ -75,7 +46,7 @@ class PhononsAnalyzer:
         # set some masses to an excessive value, to silence those atoms if any
         if only is not None:
             masses = self.structure.masses
-            indices = get_list(only, masses.shape[0])
+            indices = set(x - 1 for x in GetListWithinBounds(1, len(masses))(only))
             not_considered = set(range(masses.shape[0])) - indices
             for i in not_considered:
                 masses[i] = HUGE_MASS

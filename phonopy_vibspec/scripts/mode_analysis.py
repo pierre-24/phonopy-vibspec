@@ -5,6 +5,7 @@ Create a VESTA file containing the eigenvector for each mode
 import argparse
 import numpy
 
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
 from phonopy_vibspec.scripts import add_common_args
 
@@ -113,10 +114,9 @@ def main():
     vec_rotz /= numpy.linalg.norm(vec_rotz)
 
     # perform analysis
-    if len(args.modes) == 0:
-        modes = list(range(3 * phonons.N))
-    else:
-        modes = args.modes
+    modes = [
+        x - 1 for x in GetListWithinBounds(1, 3 * phonons.N)(args.modes)
+    ] if len(args.modes) > 0 else list(range(3 * phonons.N))
 
     print()
     print('Mode  Freq. (cm-1)  Translation (%)              Rotation (%)                 Vib. (%)')

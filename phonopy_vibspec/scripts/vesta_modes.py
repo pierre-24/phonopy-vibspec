@@ -7,6 +7,7 @@ import pathlib
 
 from typing import Tuple
 
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
 from phonopy_vibspec.scripts import add_common_args
 
@@ -52,7 +53,9 @@ def main():
 
     phonons.make_vesta_for_modes(
         pathlib.Path.cwd(),
-        modes=args.modes if len(args.modes) > 0 else None,
+        modes=[
+            x - 1 for x in GetListWithinBounds(1, 3 * phonons.N)(args.modes)
+        ] if len(args.modes) > 0 else None,
         scaling=args.scaling,
         radius=args.radius,
         color=args.color,

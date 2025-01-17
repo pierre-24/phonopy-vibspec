@@ -4,6 +4,7 @@ Create an IR spectrum in CSV form
 
 import argparse
 
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
 from phonopy_vibspec.scripts import add_common_args, add_common_args_spectra
 
@@ -26,7 +27,10 @@ def main():
         only=args.only if args.only != '' else None
     )
 
-    ir_spectrum = phonons.infrared_spectrum(modes=args.modes if len(args.modes) > 0 else None)
+    ir_spectrum = phonons.infrared_spectrum(
+        [
+            x - 1 for x in GetListWithinBounds(1, 3 * phonons.N)(args.modes)
+        ] if len(args.modes) > 0 else None)
 
     ir_spectrum.to_csv(args.csv, [args.linewidth] * len(ir_spectrum), args.limits, args.each)
 

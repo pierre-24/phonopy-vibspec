@@ -3,18 +3,19 @@ import pathlib
 import numpy
 import pytest
 
-from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL, get_list
+from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.spectra import InfraredSpectrum, RamanSpectrum
 
 
 def test_get_list():
-    assert get_list('1-3', 10) == {0, 1, 2}
-    assert get_list('1-3 5', 10) == {0, 1, 2, 4}
-    assert get_list('1-3 8-*', 10) == {0, 1, 2, 7, 8, 9}
-    assert get_list('1-3 2', 10) == {0, 1, 2}
+    assert GetListWithinBounds(1, 10)('1-3') == {1, 2, 3}
+    assert GetListWithinBounds(1, 10)('1-3 5') == {1, 2, 3, 5}
+    assert GetListWithinBounds(1, 10)('1-3 8-*') == {1, 2, 3, 8, 9, 10}
+    assert GetListWithinBounds(1, 10)('1-3 2') == {1, 2, 3}
 
     with pytest.raises(ValueError):
-        get_list('1-3 8-11', 10)
+        GetListWithinBounds(1, 10)('1-3 8-11')
 
 
 def test_infrared_SiO2(context_SiO2):

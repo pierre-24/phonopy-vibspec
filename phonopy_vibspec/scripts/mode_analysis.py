@@ -62,9 +62,16 @@ def main():
     )
 
     # prepare analysis
-    vec_dispx = numpy.tile([1., 0, 0], phonons.N) / numpy.sqrt(phonons.N)
-    vec_dispy = numpy.tile([0., 1., 0], phonons.N) / numpy.sqrt(phonons.N)
-    vec_dispz = numpy.tile([0, 0, 1.], phonons.N) / numpy.sqrt(phonons.N)
+    sqrt_masses = numpy.repeat(numpy.sqrt(phonons.structure.masses), 3)
+
+    vec_dispx = numpy.tile([1., 0, 0], phonons.N) * sqrt_masses
+    vec_dispx /= numpy.linalg.norm(vec_dispx)
+
+    vec_dispy = numpy.tile([0., 1., 0], phonons.N) * sqrt_masses
+    vec_dispy /= numpy.linalg.norm(vec_dispy)
+
+    vec_dispz = numpy.tile([0, 0, 1.], phonons.N) * sqrt_masses
+    vec_dispz /= numpy.linalg.norm(vec_dispz)
 
     proj_x = numpy.outer([1., 0, 0], [1., 0, 0])
     proj_y = numpy.outer([0, 1., 0], [0, 1., 0])
@@ -109,8 +116,11 @@ def main():
             rz /= numpy.linalg.norm(rz)
             vec_rotz[iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(rz, [0, 0, 1.])
 
+    vec_rotx *= sqrt_masses
     vec_rotx /= numpy.linalg.norm(vec_rotx)
+    vec_roty *= sqrt_masses
     vec_roty /= numpy.linalg.norm(vec_roty)
+    vec_rotz *= sqrt_masses
     vec_rotz /= numpy.linalg.norm(vec_rotz)
 
     # perform analysis

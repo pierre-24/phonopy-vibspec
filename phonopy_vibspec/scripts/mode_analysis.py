@@ -7,24 +7,12 @@ import numpy
 
 from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer
-from phonopy_vibspec.scripts import add_common_args
+from phonopy_vibspec.scripts import add_common_args, ArgGetVector
 
 
-def get_com(inp: str) -> numpy.ndarray:
-    chunks = inp.split()
-    if len(chunks) != 3:
-        raise argparse.ArgumentTypeError('invalid (space-separated) COM: `{}`, must contains 3 elements'.format(inp))
-
-    try:
-        return numpy.array(list(float(x) for x in chunks))
-    except ValueError:
-        raise argparse.ArgumentTypeError('invalid (space-separated) list of floats `{}` for COM'.format(inp))
-
-
-def fix_structure(positions, cell) -> numpy.ndarray:
+def fix_structure(positions: numpy.ndarray, cell: numpy.ndarray) -> numpy.ndarray:
     """
-    Get atoms closer.
-    Assume rectangular cell.
+    Get atoms closer. Use scaled positions.
     """
     new_positions = numpy.zeros(positions.shape)
 
@@ -41,8 +29,25 @@ def fix_structure(positions, cell) -> numpy.ndarray:
     return new_positions
 
 
-def compute_com(positions, masses):
+def compute_com(positions: numpy.ndarray, masses: numpy.ndarray) -> numpy.ndarray:
+    """Compute the center of mass"""
     return numpy.sum(positions * masses[:, numpy.newaxis], axis=0) / numpy.sum(masses)
+
+
+def compute_inertia(positions: numpy.ndarray, com: numpy.ndarray, masses: numpy.ndarray) -> numpy.ndarray:
+    """Compute the inertia tensor"""
+    p = positions - com
+    inertia = numpy.zeros((3, 3))
+
+    for i in range(3):
+        for j in range(i + 1):
+            if i == j:
+                inertia[i, i] = numpy.sum(masses * (p[:, (i + 1) % 3]**2 + p[:, (i + 2) % 3]**2))
+            else:
+                inertia[i, j] = -numpy.sum(masses * p[:, i] * p[:, j])
+                inertia[j, i] = inertia[i, j]
+
+    return inertia
 
 
 def main():
@@ -51,7 +56,10 @@ def main():
 
     parser.add_argument(
         '-f', '--fix-geometry', action='store_true', help='unwrap the cell and move atoms close together')
-    parser.add_argument('-C', '--center', type=get_com, help='set the center')
+
+    parser.add_argument(
+        '-I', '--intertia', action='store_true', help='use Inertia tensor for rotations')
+    parser.add_argument('-C', '--center', type=ArgGetVector(3), help='set the center')
 
     args = parser.parse_args()
 
@@ -61,26 +69,7 @@ def main():
         only=args.only if args.only != '' else None
     )
 
-    # prepare analysis
-    sqrt_masses = numpy.repeat(numpy.sqrt(phonons.structure.masses), 3)
-
-    vec_dispx = numpy.tile([1., 0, 0], phonons.N) * sqrt_masses
-    vec_dispx /= numpy.linalg.norm(vec_dispx)
-
-    vec_dispy = numpy.tile([0., 1., 0], phonons.N) * sqrt_masses
-    vec_dispy /= numpy.linalg.norm(vec_dispy)
-
-    vec_dispz = numpy.tile([0, 0, 1.], phonons.N) * sqrt_masses
-    vec_dispz /= numpy.linalg.norm(vec_dispz)
-
-    proj_x = numpy.outer([1., 0, 0], [1., 0, 0])
-    proj_y = numpy.outer([0, 1., 0], [0, 1., 0])
-    proj_z = numpy.outer([0, 0, 1.], [0, 0, 1.])
-
-    vec_rotx = numpy.zeros(3 * phonons.N)
-    vec_roty = numpy.zeros(3 * phonons.N)
-    vec_rotz = numpy.zeros(3 * phonons.N)
-
+    # patch up geometry if any
     positions = phonons.structure.scaled_positions
 
     if args.fix_geometry:
@@ -98,30 +87,50 @@ def main():
 
     print('Center (used for rotations) is', center)
 
+    # prepare analysis
+    sqrt_masses = numpy.repeat(numpy.sqrt(phonons.structure.masses), 3)
+
+    principal_axes = []
+    if args.intertia:
+        inertia = compute_inertia(positions, center, phonons.structure.masses)
+        eigv = numpy.linalg.eigh(inertia).eigenvectors.T
+
+        print('Principal (inertia) axes are::')
+
+        for i in range(3):
+            print(eigv[i])
+            principal_axes.append(eigv[i])
+    else:
+        for i in range(3):
+            z = numpy.zeros(3)
+            z[i] = 1.
+            principal_axes.append(z)
+
+    # translation
+    vec_disps = []
+    for i in range(3):
+        vec_disps.append(numpy.tile(principal_axes[i], phonons.N) * sqrt_masses)
+        vec_disps[i] /= numpy.linalg.norm(vec_disps[i])
+
+    # rotation
+    rot_projs = []
+    for i in range(3):
+        rot_projs.append(numpy.outer(principal_axes[i], principal_axes[i]))
+
+    vec_rots = []
+    for i in range(3):
+        vec_rots.append(numpy.zeros(3 * phonons.N))
+
     for iatm in range(phonons.N):
         r = positions[iatm] - center
 
-        rx = r - proj_x.dot(r)
-        if numpy.linalg.norm(rx) > 1e-5:
-            rx /= numpy.linalg.norm(rx)
-            vec_rotx[iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(rx, [1., 0, 0])
+        for i in range(3):
+            ri = r - rot_projs[i].dot(r)
+            ri /= numpy.linalg.norm(ri)
+            vec_rots[i][iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(ri, principal_axes[i])
 
-        ry = r - proj_y.dot(r)
-        if numpy.linalg.norm(ry) > 1e-5:
-            ry /= numpy.linalg.norm(ry)
-            vec_roty[iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(ry, [0, 1., 0])
-
-        rz = r - proj_z.dot(r)
-        if numpy.linalg.norm(rz) > 1e-5:
-            rz /= numpy.linalg.norm(rz)
-            vec_rotz[iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(rz, [0, 0, 1.])
-
-    vec_rotx *= sqrt_masses
-    vec_rotx /= numpy.linalg.norm(vec_rotx)
-    vec_roty *= sqrt_masses
-    vec_roty /= numpy.linalg.norm(vec_roty)
-    vec_rotz *= sqrt_masses
-    vec_rotz /= numpy.linalg.norm(vec_rotz)
+    for i in range(3):
+        vec_rots[i] /= numpy.linalg.norm(vec_rots[i])
 
     # perform analysis
     modes = [
@@ -135,8 +144,12 @@ def main():
     for mode in modes:
         eigvec = phonons.eigenvectors[mode]
 
-        trans_contribs = eigvec.dot(vec_dispx)**2, eigvec.dot(vec_dispy)**2, eigvec.dot(vec_dispz)**2
-        rot_contribs = eigvec.dot(vec_rotx)**2, eigvec.dot(vec_roty)**2, eigvec.dot(vec_rotz)**2
+        trans_contribs = []
+        rot_contribs = []
+
+        for i in range(3):
+            trans_contribs.append(eigvec.dot(vec_disps[i])**2)
+            rot_contribs.append(eigvec.dot(vec_rots[i])**2)
 
         print('{:4} {:14.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}  {:6.2f} {:6.2f} {:6.2f} {:6.2f}  {:8.2f}   {}'.format(
             mode + 1,

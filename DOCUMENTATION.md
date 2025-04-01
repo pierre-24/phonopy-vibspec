@@ -163,7 +163,7 @@ The procedure is more complex, since one needs the derivatives of the BORN charg
 phonopy-vs-prepare-raman
 
 # 2. Create folders for calculations
-for i in dielec-*.vasp; do a=$(i%.vasp); mkdir -p $a; cd $a; ln -s ../$i POSCAR; cd ..; done; 
+for i in dielec_*.vasp; do a=${i%.vasp}; mkdir -p $a; cd $a; ln -s ../$i POSCAR; cd ..; done; 
 
 # 3. Run calculations with `LEPSILON = .TRUE.` for each displaced geometry
 for i in dielec-*; do cd $i; vasp_std; cd ..; done

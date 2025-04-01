@@ -156,8 +156,7 @@ Note that Phonopy is generally not able to assign symmetry labels in that case.
 
 ### 4. Raman spectrum
 
-The procedure is more complex, since one needs the derivatives of the BORN charge with respect to polarizability (*i.e.*, the polarizability).
-Once you have completed step 1, do the following:
+The procedure is more complex, since one needs the derivatives of the BORN charge with respect to electric field (*i.e.*, the change in polarizability due to normal mode displacements). Once you have completed step 1, do the following:
 
 ```bash
 # 1. Get displaced geometries and prepare a `raman.hdf5` file

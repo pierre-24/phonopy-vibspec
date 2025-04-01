@@ -21,7 +21,7 @@ Long story short, in order to get a spectra, one needs to:
 
 ## Usage
 
-### Frequencies and normal modes
+### 1. Frequencies and normal modes
 
 To get the force constant, you need to use [`Phonopy`](https://phonopy.github.io/phonopy/index.html) (which is installed since it is a dependency of this package) as usual.
 
@@ -84,7 +84,7 @@ EDIFF = 1.0e-08 ! stricter criterion for energy convergence
 PREC = Accurate  ! increase precision
 ```
 
-### Visualisation and interpretation of the normal modes
+### 2. Visualisation and interpretation of the normal modes (optional)
 
 If you want, you can then create files to visualize the modes in [VESTA](http://jp-minerals.org/vesta/en/):
 
@@ -106,9 +106,9 @@ It is also possible to "unwrap" the cell (i.e., move atoms close together), whic
 
 **Note:** negative vibrational contributions are sometimes reported. Keep in mind that this is an estimate.
 
-### Infrared spectrum
+### 3. Infrared spectrum
 
-After obtaining the dynamic matrix, the frequencies and corresponding mode, you then need to run another calculation in order to compute the born effective charges and extract them using [a utility](https://phonopy.github.io/phonopy/auxiliary-tools.html#phonopy-vasp-born) provided by Phonopy:
+After obtaining the dynamic matrix, the frequencies and corresponding mode (step 1), you then need to run another calculation in order to compute the born effective charges and extract them using [a utility](https://phonopy.github.io/phonopy/auxiliary-tools.html#phonopy-vasp-born) provided by Phonopy:
 
 ```bash
 # 1. Run a calculation with `LEPSILON = .TRUE.` **on the unit cell**
@@ -154,9 +154,10 @@ phonopy-vs-ir -q="0.5 0 0" spectrum_0.5.csv
 
 Note that Phonopy is generally not able to assign symmetry labels in that case.
 
-## Raman spectrum
+### 4. Raman spectrum
 
-The procedure is more complex, since one needs the derivatives of the BORN charge with respect to polarizability (*i.e.*, the polarizability):
+The procedure is more complex, since one needs the derivatives of the BORN charge with respect to polarizability (*i.e.*, the polarizability).
+Once you have completed step 1, do the following:
 
 ```bash
 # 1. Get displaced geometries and prepare a `raman.hdf5` file
@@ -181,9 +182,9 @@ The resulting output contains the same sections as with IR (except it gives rama
 
 Contributions, either with [issues](https://github.com/pierre-24/phonopy-vibspec/issues) or [pull requests](https://github.com/pierre-24/phonopy-vibspec/pulls) are welcomed.
 
-### Install
+### Install (for dev)
 
-If you want to contribute, this is the usual deal: 
+Rather than the installation procedure given on top if this document, if you want to contribute, this is the usual deal: 
 start by [forking](https://guides.github.com/activities/forking/), then clone your fork and use the following install procedures instead.
 
 ```bash

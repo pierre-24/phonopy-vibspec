@@ -159,14 +159,14 @@ Note that Phonopy is generally not able to assign symmetry labels in that case.
 The procedure is more complex, since one needs the derivatives of the BORN charge with respect to polarizability (*i.e.*, the polarizability):
 
 ```bash
-# 1. Get displaced geometries
+# 1. Get displaced geometries and prepare a `raman.hdf5` file
 phonopy-vs-prepare-raman
 
 # 2. Create folders for calculations
 for i in dielec_*.vasp; do a=${i%.vasp}; mkdir -p $a; cd $a; ln -s ../$i POSCAR; cd ..; done; 
 
 # 3. Run calculations with `LEPSILON = .TRUE.` for each displaced geometry
-for i in dielec-*; do cd $i; vasp_std; cd ..; done
+for i in dielec_*; do if [[ -d $i ]]; then cd $i; vasp_std; cd ..; fi; done
 
 # 4. Collect dielectric constants
 phonopy-vs-gather-raman dielec-*/vasprun.xml

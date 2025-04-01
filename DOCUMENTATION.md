@@ -170,7 +170,7 @@ for i in dielec_*.vasp; do a=${i%.vasp}; mkdir -p $a; cd $a; ln -s ../$i POSCAR;
 for i in dielec_*; do if [[ -d $i ]]; then cd $i; vasp_std; cd ..; fi; done
 
 # 4. Collect dielectric constants
-phonopy-vs-gather-raman dielec-*/vasprun.xml
+phonopy-vs-gather-raman dielec_*/vasprun.xml
 
 # 4. Get Raman spectrum
 phonopy-vs-raman spectrum.csv

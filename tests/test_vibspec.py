@@ -4,7 +4,18 @@ import numpy
 import pytest
 
 from phonopy_vibspec.phonons_analyzer import PhononsAnalyzer, TWO_POINTS_STENCIL
+from phonopy_vibspec import GetListWithinBounds
 from phonopy_vibspec.spectra import InfraredSpectrum, RamanSpectrum
+
+
+def test_get_list():
+    assert GetListWithinBounds(1, 10)('1-3') == {1, 2, 3}
+    assert GetListWithinBounds(1, 10)('1-3 5') == {1, 2, 3, 5}
+    assert GetListWithinBounds(1, 10)('1-3 8-*') == {1, 2, 3, 8, 9, 10}
+    assert GetListWithinBounds(1, 10)('1-3 2') == {1, 2, 3}
+
+    with pytest.raises(ValueError):
+        GetListWithinBounds(1, 10)('1-3 8-11')
 
 
 def test_infrared_SiO2(context_SiO2):
@@ -36,6 +47,23 @@ def test_infrared_SiO2(context_SiO2):
             assert ir_intensities[i] != pytest.approx(.0, abs=1e-8)
         else:
             assert ir_intensities[i] == pytest.approx(.0, abs=1e-8)
+
+
+def test_infrared_SiO2_only(context_SiO2):
+    phonons = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN'
+    )
+
+    phonons_with_only = PhononsAnalyzer.from_phonopy(
+        phonopy_yaml='phonopy_disp.yaml',
+        force_constants_filename='force_constants.hdf5',
+        born_filename='BORN',
+        only='1-3'
+    )
+
+    assert not numpy.allclose(phonons.frequencies, phonons_with_only.frequencies)
 
 
 def test_infrared_spectrum_save_SiO2(context_SiO2, tmp_path):

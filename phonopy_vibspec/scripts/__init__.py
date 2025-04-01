@@ -1,23 +1,21 @@
 import argparse
-from typing import List, Tuple
+from typing import Tuple
 
 
-def list_of_modes(inp: str) -> List[int]:
-    try:
-        return [int(x) - 1 for x in inp.split()]
-    except ValueError:
-        raise argparse.ArgumentTypeError('invalid (space-separated) list of integers `{}` for modes'.format(inp))
+class ArgGetVector:
+    def __init__(self, size: int):
+        self.size = size
 
+    def __call__(self, inp: str) -> tuple:
+        chunks = inp.split()
+        if len(chunks) != self.size:
+            raise argparse.ArgumentTypeError(
+                'invalid (space-separated) vector `{}`, must contains {} elements'.format(inp, self.size))
 
-def q_point(inp: str) -> Tuple[float, float, float]:
-    chunks = inp.split()
-    if len(chunks) != 3:
-        raise argparse.ArgumentTypeError('invalid (space-separated) q-point `{}`, must contains 3 elements'.format(inp))
-
-    try:
-        return tuple(float(x) for x in chunks)
-    except ValueError:
-        raise argparse.ArgumentTypeError('invalid (space-separated) list of floats `{}` for q-point'.format(inp))
+        try:
+            return tuple(float(x) for x in chunks)
+        except ValueError:
+            raise argparse.ArgumentTypeError('invalid (space-separated) list of floats `{}`'.format(inp))
 
 
 def add_common_args(parser: argparse.ArgumentParser):
@@ -26,13 +24,15 @@ def add_common_args(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--fc', type=str, help='Force constant filename', default='force_constants.hdf5')
 
-    parser.add_argument('-m', '--modes', type=list_of_modes, help='List of modes (1-based)', default='')
+    parser.add_argument('-m', '--modes', type=str, help='List of modes (1-based)', default='')
 
     parser.add_argument(
         '-q',
-        type=q_point,
+        type=ArgGetVector(3),
         help='q-point at which this should be computed (default is gamma)',
         default='0 0 0')
+
+    parser.add_argument('-O', '--only', type=str, help='only consider certain atoms', default='')
 
 
 def interval(s_interval: str) -> Tuple[float, float]:

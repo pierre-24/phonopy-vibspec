@@ -8,14 +8,18 @@ from phonopy.interface import calculator as phonopy_calculator
 
 from typing import Optional, List, Tuple, Union
 
-from phonopy_vibspec import logger
+from phonopy_vibspec import logger, GetListWithinBounds
 from phonopy.units import VaspToCm
+
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 from phonopy_vibspec.vesta import VestaVector, make_vesta_file
 
 # [(value, coef), ...]
 # see https://en.wikipedia.org/wiki/Finite_difference_coefficient
 TWO_POINTS_STENCIL = [(-1, -.5), (1, .5)]  # two-points, centered
+
+
+HUGE_MASS = 10000  # AMU
 
 
 l_logger = logger.getChild(__name__)
@@ -29,12 +33,27 @@ class PhononsAnalyzer:
     DC_GEOMETRY_TEMPLATE = 'dielec_mode{:04d}_step{:02d}.vasp'
     VESTA_MODE_TEMPLATE = 'mode{:04d}.vesta'
 
-    def __init__(self, phonon: phonopy.Phonopy, q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0)):
+    def __init__(
+            self,
+            phonon: phonopy.Phonopy,
+            q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0),
+            only: Optional[str] = None
+    ):
         self.phonopy = phonon
         self.q = q
         self.structure = phonon.primitive
 
-        # get eigenvalues and eigenvectors at gamma point
+        # set some masses to an excessive value, to silence those atoms if any
+        if only is not None:
+            masses = self.structure.masses
+            indices = set(x - 1 for x in GetListWithinBounds(1, len(masses))(only))
+            not_considered = set(range(masses.shape[0])) - indices
+            for i in not_considered:
+                masses[i] = HUGE_MASS
+
+            self.structure.masses = masses
+
+        # get eigenvalues and eigenvectors at a given q point
         # See https://github.com/phonopy/phonopy/issues/308#issuecomment-1769736200
         l_logger.info('Symmetrize force constant')
         self.phonopy.symmetrize_force_constants()
@@ -48,7 +67,10 @@ class PhononsAnalyzer:
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
         self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real) * VaspToCm  # in [cm⁻¹]
 
-        l_logger.info('The 5 first modes are at (in cm⁻¹) {}'.format(
+        if self.frequencies[0] < -30:
+            l_logger.warn('The first frequency is very small: {:.3f} cm⁻¹'.format(self.frequencies[0]))
+
+        l_logger.info('The 5 first modes are {}'.format(
             ', '.join('{:.3f}'.format(x) for x in self.frequencies[:5]))
         )
 
@@ -78,7 +100,8 @@ class PhononsAnalyzer:
         phonopy_yaml: str = 'phonopy_disp.yaml',
         force_constants_filename: str = 'force_constants.hdf5',
         born_filename: Optional[str] = None,
-        q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0)
+        q: Union[NDArray, Tuple[float, float, float]] = (.0, .0, .0),
+        only: Optional[str] = None,
     ) -> 'PhononsAnalyzer':
         """
         Use the Python interface of Phonopy, see https://phonopy.github.io/phonopy/phonopy-module.html.
@@ -90,7 +113,7 @@ class PhononsAnalyzer:
             phonopy_yaml=phonopy_yaml,
             force_constants_filename=force_constants_filename,
             born_filename=born_filename,
-        ), q=q)
+        ), q=q, only=only)
 
     def infrared_spectrum(self, modes: Optional[List[int]] = None) -> InfraredSpectrum:
         """

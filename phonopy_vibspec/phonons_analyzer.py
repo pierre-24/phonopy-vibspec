@@ -9,7 +9,10 @@ from phonopy.interface import calculator as phonopy_calculator
 from typing import Optional, List, Tuple, Union
 
 from phonopy_vibspec import logger, GetListWithinBounds
-from phonopy.units import VaspToCm
+try:
+    from phonopy.units import VaspToCm  # noqa
+except ImportError:
+    from phonopy.physical_units import get_physical_units
 
 from phonopy_vibspec.spectra import RamanSpectrum, InfraredSpectrum
 from phonopy_vibspec.vesta import VestaVector, make_vesta_file
@@ -21,6 +24,7 @@ TWO_POINTS_STENCIL = [(-1, -.5), (1, .5)]  # two-points, centered
 
 HUGE_MASS = 10000  # AMU
 
+physical_units = get_physical_units()
 
 l_logger = logger.getChild(__name__)
 
@@ -65,7 +69,8 @@ class PhononsAnalyzer:
 
         self.N = self.structure.get_number_of_atoms()
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
-        self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real) * VaspToCm  # in [cm⁻¹]
+        self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real)
+        self.frequencies *= physical_units.DefaultToTHz * physical_units.THzToCm  # in [cm⁻¹]
 
         if self.frequencies[0] < -30:
             l_logger.warn('The first frequency is very small: {:.3f} cm⁻¹'.format(self.frequencies[0]))

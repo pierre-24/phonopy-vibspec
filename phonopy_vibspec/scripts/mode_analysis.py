@@ -91,7 +91,7 @@ def main():
     sqrt_masses = numpy.repeat(numpy.sqrt(phonons.structure.masses), 3)
 
     principal_axes = []
-    if args.intertia:
+    if args.inertia:
         inertia = compute_inertia(positions, center, phonons.structure.masses)
         eigv = numpy.linalg.eigh(inertia).eigenvectors.T
 

@@ -5,7 +5,7 @@ Simulate IR and Raman spectra with Phonopy
 import logging
 import os
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 __author__ = 'Pierre Beaujean'
 __maintainer__ = 'Pierre Beaujean'
 __email__ = 'pierre.beaujean@unamur.be'

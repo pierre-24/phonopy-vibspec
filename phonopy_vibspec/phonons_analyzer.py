@@ -92,9 +92,10 @@ class PhononsAnalyzer:
             self.phonopy.set_irreps(q)
             self.irreps = phonon.irreps
 
-            for label, dgset in zip(self.irreps.rotation_symbols, self.irreps.band_indices):
-                for j in dgset:
-                    self.irrep_labels[j] = label
+            if self.irreps._ir_labels is not None:
+                for label, dgset in zip(self.irreps._ir_labels, self.irreps.band_indices):
+                    for j in dgset:
+                        self.irrep_labels[j] = label
         except RuntimeError as e:
             l_logger.warn('Error while computing irreps ({}). Incorrect labels will be assigned.'.format(e))
 

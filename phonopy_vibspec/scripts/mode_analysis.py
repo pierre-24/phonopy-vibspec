@@ -1,5 +1,5 @@
 """
-Create a VESTA file containing the eigenvector for each mode
+Analyze the translational/rotational/vibrational contribution to each mode
 """
 
 import argparse
@@ -58,7 +58,7 @@ def main():
         '-f', '--fix-geometry', action='store_true', help='unwrap the cell and move atoms close together')
 
     parser.add_argument(
-        '-I', '--intertia', action='store_true', help='use Inertia tensor for rotations')
+        '-I', '--inertia', action='store_true', help='use Inertia tensor for rotations')
     parser.add_argument('-C', '--center', type=ArgGetVector(3), help='set the center')
 
     args = parser.parse_args()
@@ -127,7 +127,7 @@ def main():
         for i in range(3):
             ri = r - rot_projs[i].dot(r)
             ri /= numpy.linalg.norm(ri)
-            vec_rots[i][iatm * 3:(iatm + 1) * 3] = numpy.linalg.cross(ri, principal_axes[i])
+            vec_rots[i][iatm * 3:(iatm + 1) * 3] = numpy.cross(ri, principal_axes[i])
 
     for i in range(3):
         vec_rots[i] /= numpy.linalg.norm(vec_rots[i])

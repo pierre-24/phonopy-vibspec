@@ -90,10 +90,9 @@ class PhononsAnalyzer:
 
         try:
             self.phonopy.set_irreps(q)
-            self.irreps = phonon.get_irreps()
+            self.irreps = phonon.irreps
 
-            # TODO: that's internal API, so subject to change!
-            for label, dgset in zip(self.irreps._get_ir_labels(), self.irreps._degenerate_sets):
+            for label, dgset in zip(self.irreps.rotation_symbols, self.irreps.band_indices):
                 for j in dgset:
                     self.irrep_labels[j] = label
         except RuntimeError as e:

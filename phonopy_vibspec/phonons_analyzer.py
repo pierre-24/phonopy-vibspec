@@ -67,7 +67,7 @@ class PhononsAnalyzer:
         dm = self.phonopy.dynamical_matrix.dynamical_matrix
         eigv, eigf = numpy.linalg.eigh(dm)
 
-        self.N = self.structure.get_number_of_atoms()
+        self.N = len(self.structure)
         l_logger.info('Analyze {} modes (including acoustic)'.format(3 * self.N))
         self.frequencies = numpy.sqrt(numpy.abs(eigv.real)) * numpy.sign(eigv.real)
         self.frequencies *= VaspToCm  # in [cm⁻¹]
@@ -209,9 +209,7 @@ class PhononsAnalyzer:
 
             for i, (value, _) in enumerate(stencil):
                 displaced_geometry = base_geometry.copy()
-                displaced_geometry.set_positions(
-                    base_geometry.positions + value * step * self.eigendisps[mode]
-                )
+                displaced_geometry.positions = base_geometry.positions + value * step * self.eigendisps[mode]
 
                 path = directory / self.DC_GEOMETRY_TEMPLATE.format(mode + 1, i + 1)  # 1-based output
                 l_logger.debug('Write displaced geometry for (mode={}, step={}) in `{}`'.format(mode, i, path))

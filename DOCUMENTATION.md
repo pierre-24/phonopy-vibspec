@@ -74,7 +74,7 @@ vasp_std
 phonopy -f disp-*/vasprun.xml
 
 # 5. Compute force constants (a `force_constants.hdf5` file is created)
-phonopy --writefc-format HDF5 --writefc
+phonopy-load --writefc --writefc-format HDF5
 ```
 
 Again, for step 3, you need to set:

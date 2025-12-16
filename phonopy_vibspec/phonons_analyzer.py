@@ -95,7 +95,7 @@ class PhononsAnalyzer:
             if self.irreps._ir_labels is not None:
                 for label, dgset in zip(self.irreps._ir_labels, self.irreps.band_indices):
                     for j in dgset:
-                        self.irrep_labels[j] = label
+                        self.irrep_labels[j] = label if label is not None else '?'
         except RuntimeError as e:
             l_logger.warn('Error while computing irreps ({}). Incorrect labels will be assigned.'.format(e))
 

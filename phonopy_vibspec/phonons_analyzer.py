@@ -284,7 +284,7 @@ class PhononsAnalyzer:
                 for i in range(self.N) if eigv_norms[mode][i] > threshold * max_norm
             ]
 
-            with (directory / self.VESTA_MODE_TEMPLATE.format(mode + 1)).open('w') as f:
+            with (directory / self.VESTA_MODE_TEMPLATE.format(mode + 1)).open('w', encoding='utf8') as f:
                 make_vesta_file(
                     f,
                     self.structure,

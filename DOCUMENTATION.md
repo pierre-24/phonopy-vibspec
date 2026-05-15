@@ -2,7 +2,7 @@
 
 ## Install
 
-To install this package, you need a running Python 3 installation (Python >= 3.10 recommended), and
+To install this package, you need a running Python 3 installation (Python >= 3.10 recommended), Phonopy **v3.51.0**, and
 
 ```bash
 pip3 install git+https://github.com/pierre-24/phonopy-vibspec.git
@@ -194,7 +194,7 @@ python -m venv virtualenv
 source venv/bin/activate
 
 # install also dev dependencies
-make install
+make install-dev
 ```
 
 ### Tips to contribute

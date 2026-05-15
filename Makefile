@@ -1,4 +1,7 @@
 install:
+	pip install -e .
+
+install-dev: install
 	pip install -e .[dev]
 
 lint:

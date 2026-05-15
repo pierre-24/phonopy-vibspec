@@ -237,7 +237,7 @@ def make_vesta_file(f: TextIO, structure: PhonopyAtoms, vectors: Optional[List[V
 
     # atoms
     f.write('STRUC\n')
-    for i in range(structure.get_number_of_atoms()):
+    for i in range(len(structure)):
         # symbol and position
         f.write('  {:<2d} {:>2s} {:>12s} {:7.4f} {:10.6f} {:10.6f} {:10.6f} {:>5} -\n'.format(
             i + 1,

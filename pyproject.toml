@@ -29,7 +29,7 @@ classifiers = [
 
 dependencies = [
     "numpy",
-    "phonopy"
+    "phonopy == 3.5.1"
 ]
 
 [project.optional-dependencies]

@@ -66,4 +66,4 @@ def add_common_args_spectra(parser: argparse.ArgumentParser):
     parser.add_argument(
         '-L', '--linewidth', help='Linewidth', default=5, type=float)
 
-    parser.add_argument('csv', help='output CSV file', type=argparse.FileType('w'))
+    parser.add_argument('csv', help='output CSV file', type=argparse.FileType('w', encoding='utf8'))
